@@ -114,6 +114,26 @@
                     </label>
                 </div>
 
+                <!-- Public history duration -->
+                <div class="my-3">
+                    <label for="public-history-days" class="form-label">{{ $t("publicHistoryDays") }}</label>
+                    <select
+                        id="public-history-days"
+                        v-model.number="config.publicHistoryDays"
+                        class="form-select"
+                        data-testid="public-history-days-select"
+                    >
+                        <option :value="0">{{ $t("publicHistoryDaysDefault") }}</option>
+                        <option :value="1">{{ $t("publicHistoryDaysOption", [1]) }}</option>
+                        <option :value="3">{{ $t("publicHistoryDaysOption", [3]) }}</option>
+                        <option :value="7">{{ $t("publicHistoryDaysOption", [7]) }}</option>
+                        <option :value="14">{{ $t("publicHistoryDaysOption", [14]) }}</option>
+                        <option :value="30">{{ $t("publicHistoryDaysOption", [30]) }}</option>
+                        <option :value="90">{{ $t("publicHistoryDaysOption", [90]) }}</option>
+                    </select>
+                    <div class="form-text">{{ $t("publicHistoryDaysDescription") }}</div>
+                </div>
+
                 <!-- Domain Name List -->
                 <div class="my-3">
                     <label class="form-label">
@@ -493,6 +513,7 @@
                     :show-tags="config.showTags"
                     :show-certificate-expiry="config.showCertificateExpiry"
                     :show-only-last-heartbeat="config.showOnlyLastHeartbeat"
+                    :public-history-days="config.publicHistoryDays || 0"
                 />
             </div>
 

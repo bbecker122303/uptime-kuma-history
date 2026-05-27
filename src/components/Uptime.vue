@@ -90,6 +90,13 @@ export default {
             if (this.type === "720") {
                 return this.$t("days", 30);
             }
+            if (this.type === "24") {
+                return this.$t("hours", 24);
+            }
+            const days = Number(this.type);
+            if (!Number.isNaN(days) && days > 0) {
+                return this.$t("days", days);
+            }
             return this.$t("hours", 24);
         },
     },

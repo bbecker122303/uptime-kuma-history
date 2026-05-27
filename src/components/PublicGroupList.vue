@@ -74,7 +74,12 @@
                                                     v-if="showOnlyLastHeartbeat"
                                                     :status="statusOfLastHeartbeat(monitor.element.id)"
                                                 />
-                                                <Uptime v-else :monitor="monitor.element" type="24" :pill="true" />
+                                                <Uptime
+                                                    v-else
+                                                    :monitor="monitor.element"
+                                                    :type="uptimeType"
+                                                    :pill="true"
+                                                />
                                                 <a
                                                     v-if="showLink(monitor)"
                                                     :href="monitor.element.url"
@@ -116,7 +121,11 @@
                                             </div>
                                         </div>
                                         <div :key="$root.userHeartbeatBar" class="col-3 col-xl-6">
-                                            <HeartbeatBar size="mid" :monitor-id="monitor.element.id" />
+                                            <HeartbeatBar
+                                                size="mid"
+                                                :monitor-id="monitor.element.id"
+                                                :heartbeat-bar-days="publicHistoryDays"
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -165,6 +174,11 @@ export default {
         showOnlyLastHeartbeat: {
             type: Boolean,
         },
+        /** How many days of history to show on the public page (0 = default) */
+        publicHistoryDays: {
+            type: Number,
+            default: 0,
+        },
     },
     data() {
         return {};
@@ -172,6 +186,12 @@ export default {
     computed: {
         showGroupDrag() {
             return this.$root.publicGroupList.length >= 2;
+        },
+        uptimeType() {
+            if (this.publicHistoryDays > 0) {
+                return String(this.publicHistoryDays);
+            }
+            return "24";
         },
     },
     methods: {
