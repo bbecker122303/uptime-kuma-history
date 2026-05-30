@@ -273,6 +273,11 @@ body.dark.status-page-fluent {
             text-decoration: underline;
         }
     }
+
+    .fluent-notices-after-name {
+        margin-right: 0;
+        margin-left: 0.5rem;
+    }
 }
 
 .fluent-service-meta {
@@ -367,6 +372,155 @@ body.dark.status-page-fluent {
     border-radius: var(--sp-radius);
     padding: 1rem 1.25rem;
     margin-bottom: 1rem;
+}
+
+.fluent-past-incidents {
+    margin-top: 0.5rem;
+}
+
+.fluent-past-incidents-heading {
+    margin-bottom: 1rem;
+}
+
+.fluent-past-incidents-group {
+    margin-bottom: 1.5rem;
+}
+
+.fluent-past-incidents-date {
+    margin: 0 0 0.5rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--sp-text-secondary);
+}
+
+.fluent-past-incidents-card {
+    overflow: hidden;
+}
+
+.fluent-past-incidents-load-more {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.fluent-load-more-btn {
+    color: var(--sp-text);
+    background: var(--sp-card);
+    border: 1px solid var(--sp-card-border);
+    border-radius: var(--sp-radius);
+    padding: 0.375rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    box-shadow: none;
+
+    &:hover:not(:disabled) {
+        background: #f3f2f1;
+        border-color: var(--sp-card-border);
+        color: var(--sp-text);
+    }
+
+    body.dark.status-page-fluent &:hover:not(:disabled) {
+        background: #323130;
+    }
+}
+
+.incident-group--fluent {
+    padding: 0;
+
+    .incident-list .incident-item {
+        padding: 0.875rem 1rem;
+        border-radius: 0;
+        border-bottom: 1px solid var(--sp-card-border);
+        border-left: 4px solid transparent;
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        &:hover {
+            background: #f3f2f1;
+        }
+
+        body.dark.status-page-fluent & {
+            &:hover {
+                background: #323130;
+            }
+        }
+
+        &.resolved {
+            opacity: 0.85;
+        }
+    }
+
+    .fluent-incident-warning {
+        border-left-color: var(--sp-warning);
+    }
+
+    .fluent-incident-danger {
+        border-left-color: var(--sp-danger);
+    }
+
+    .fluent-incident-info,
+    .fluent-incident-primary {
+        border-left-color: var(--sp-primary);
+    }
+
+    .fluent-incident-light {
+        border-left-color: var(--sp-card-border);
+    }
+
+    .fluent-incident-dark {
+        border-left-color: var(--sp-text-secondary);
+    }
+
+    .incident-title {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: var(--sp-text);
+    }
+
+    .incident-content {
+        font-size: 0.875rem;
+        line-height: 1.45;
+        color: var(--sp-text-secondary);
+
+        :deep(p:last-child) {
+            margin-bottom: 0;
+        }
+    }
+
+    .incident-meta {
+        font-size: 0.75rem;
+        color: var(--sp-text-secondary);
+    }
+
+    .incident-affected-label {
+        color: var(--sp-text-secondary);
+    }
+
+    .incident-service-link {
+        color: var(--sp-primary);
+        border: 1px solid var(--sp-card-border);
+        border-radius: var(--sp-radius);
+        background: transparent;
+
+        &:hover {
+            background: #f3f2f1;
+            text-decoration: none;
+        }
+
+        body.dark.status-page-fluent & {
+            &:hover {
+                background: #323130;
+            }
+        }
+    }
+
+    .text-muted {
+        color: var(--sp-text-secondary) !important;
+    }
 }
 
 body.status-page-fluent .btn-primary {

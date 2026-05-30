@@ -512,45 +512,17 @@
                     />
                 </div>
 
-                <div v-if="pastIncidentCount > 0" class="past-incidents-section mb-4">
-                    <h2 class="past-incidents-title mb-3">{{ $t("Past Incidents") }}</h2>
-                    <div class="past-incidents-content">
-                        <div
-                            v-for="(dateGroup, dateKey) in groupedIncidentHistory"
-                            :key="dateKey"
-                            class="incident-date-group mb-4"
-                        >
-                            <h4 class="incident-date-header">{{ dateKey }}</h4>
-                            <div class="fluent-card incident-list-box">
-                                <IncidentHistory
-                                    :incidents="dateGroup"
-                                    :edit-mode="enableEditMode"
-                                    :loading="incidentHistoryLoading"
-                                    @edit-incident="$refs.incidentManageModal.showEdit($event)"
-                                    @delete-incident="$refs.incidentManageModal.showDelete($event)"
-                                    @resolve-incident="resolveIncident"
-                                />
-                            </div>
-                        </div>
-                        <div
-                            v-if="incidentHistoryHasMore"
-                            class="load-more-controls d-flex justify-content-center mt-3"
-                        >
-                            <button
-                                class="btn btn-outline-secondary btn-sm"
-                                :disabled="incidentHistoryLoading"
-                                @click="loadMoreIncidentHistory"
-                            >
-                                <span
-                                    v-if="incidentHistoryLoading"
-                                    class="spinner-border spinner-border-sm me-1"
-                                    role="status"
-                                ></span>
-                                {{ $t("Load More") }}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <FluentPastIncidents
+                    v-if="pastIncidentCount > 0"
+                    :grouped-incident-history="groupedIncidentHistory"
+                    :edit-mode="enableEditMode"
+                    :loading="incidentHistoryLoading"
+                    :has-more="incidentHistoryHasMore"
+                    @load-more="loadMoreIncidentHistory"
+                    @edit-incident="$refs.incidentManageModal.showEdit($event)"
+                    @delete-incident="$refs.incidentManageModal.showDelete($event)"
+                    @resolve-incident="resolveIncident"
+                />
 
                 <footer class="mt-5 mb-4">
                     <div class="custom-footer-text text-start">
@@ -977,6 +949,7 @@ import FluentStatusPageLayout from "../components/status-page-fluent/FluentStatu
 import FluentPageHeader from "../components/status-page-fluent/FluentPageHeader.vue";
 import FluentHealthSummary from "../components/status-page-fluent/FluentHealthSummary.vue";
 import FluentPublicGroupList from "../components/status-page-fluent/FluentPublicGroupList.vue";
+import FluentPastIncidents from "../components/status-page-fluent/FluentPastIncidents.vue";
 import MaintenanceTime from "../components/MaintenanceTime.vue";
 import IncidentHistory from "../components/IncidentHistory.vue";
 import IncidentManageModal from "../components/IncidentManageModal.vue";
@@ -1033,6 +1006,7 @@ export default {
         FluentPageHeader,
         FluentHealthSummary,
         FluentPublicGroupList,
+        FluentPastIncidents,
         ImageCropUpload,
         Confirm,
         PrismEditor,

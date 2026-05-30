@@ -38,10 +38,6 @@
 
                 <div class="fluent-service-main">
                     <p class="fluent-service-name">
-                        <StatusPageOutageIndicator
-                            v-if="linkedIncidents.length > 0 && !editMode"
-                            :count="linkedIncidents.length"
-                        />
                         <a
                             v-if="showLink"
                             :href="monitor.url"
@@ -53,6 +49,11 @@
                             {{ monitor.name }}
                         </a>
                         <span v-else data-testid="monitor-name">{{ monitor.name }}</span>
+                        <StatusPageOutageIndicator
+                            v-if="linkedIncidents.length > 0 && !editMode"
+                            class="fluent-notices-after-name"
+                            :count="linkedIncidents.length"
+                        />
                     </p>
                     <div v-if="hasMeta" class="fluent-service-meta" @click.stop>
                         <span

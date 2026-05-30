@@ -1,5 +1,5 @@
 <template>
-    <div class="incident-group" data-testid="incident-group">
+    <div class="incident-group" :class="{ 'incident-group--fluent': fluent }" data-testid="incident-group">
         <div v-if="loading && incidents.length === 0" class="text-center py-4">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">{{ $t("Loading...") }}</span>
@@ -15,30 +15,36 @@
                 v-for="incident in incidents"
                 :key="incident.id"
                 class="incident-item"
-                :class="{ resolved: !incident.active }"
+                :class="[
+                    { resolved: !incident.active },
+                    fluent ? `fluent-incident-item fluent-incident-${incident.style || 'warning'}` : '',
+                ]"
             >
-                <div class="incident-style-indicator" :class="`bg-${incident.style}`"></div>
+                <div v-if="!fluent" class="incident-style-indicator" :class="`bg-${incident.style}`"></div>
                 <div class="incident-body">
                     <div class="incident-header d-flex justify-content-between align-items-start">
                         <h5 class="incident-title mb-0">{{ incident.title }}</h5>
                         <div v-if="editMode" class="incident-actions">
                             <button
                                 v-if="incident.active"
-                                class="btn btn-success btn-sm me-1"
+                                class="btn btn-sm me-1"
+                                :class="fluent ? 'btn-light' : 'btn-success'"
                                 :title="$t('Resolve')"
                                 @click="$emit('resolve-incident', incident)"
                             >
                                 <font-awesome-icon icon="check" />
                             </button>
                             <button
-                                class="btn btn-outline-secondary btn-sm me-1"
+                                class="btn btn-sm me-1"
+                                :class="fluent ? 'btn-light' : 'btn-outline-secondary'"
                                 :title="$t('Edit')"
                                 @click="$emit('edit-incident', incident)"
                             >
                                 <font-awesome-icon icon="edit" />
                             </button>
                             <button
-                                class="btn btn-outline-danger btn-sm"
+                                class="btn btn-sm"
+                                :class="fluent ? 'btn-light text-danger' : 'btn-outline-danger'"
                                 :title="$t('Delete')"
                                 @click="$emit('delete-incident', incident)"
                             >
@@ -95,6 +101,10 @@ export default {
             default: false,
         },
         loading: {
+            type: Boolean,
+            default: false,
+        },
+        fluent: {
             type: Boolean,
             default: false,
         },
@@ -207,7 +217,7 @@ export default {
             .incident-affected-label {
                 font-size: 0.75rem;
                 font-weight: 600;
-                color: $secondary;
+                color: #6c757d;
             }
 
             .incident-service-link {

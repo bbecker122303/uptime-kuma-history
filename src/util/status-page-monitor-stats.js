@@ -1,4 +1,4 @@
-import { UP } from "./util.ts";
+import { UP } from "../util.ts";
 
 /**
  * @param {object} root Vue root with heartbeatList

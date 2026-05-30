@@ -121,13 +121,6 @@
                                                         :type="uptimeType"
                                                         :pill="true"
                                                     />
-                                                    <StatusPageOutageIndicator
-                                                        v-if="
-                                                            !editMode &&
-                                                            incidentsForMonitor(monitor.element.id).length > 0
-                                                        "
-                                                        :count="incidentsForMonitor(monitor.element.id).length"
-                                                    />
                                                     <a
                                                         v-if="showLink(monitor)"
                                                         :href="monitor.element.url"
@@ -142,6 +135,14 @@
                                                     <p v-else class="item-name" data-testid="monitor-name">
                                                         {{ monitor.element.name }}
                                                     </p>
+                                                    <StatusPageOutageIndicator
+                                                        v-if="
+                                                            !editMode &&
+                                                            incidentsForMonitor(monitor.element.id).length > 0
+                                                        "
+                                                        class="classic-notices-after-name"
+                                                        :count="incidentsForMonitor(monitor.element.id).length"
+                                                    />
                                                 </div>
                                                 <div class="extra-info" @click.stop>
                                                     <div
@@ -463,6 +464,11 @@ export default {
     padding-right: 5px;
     margin: 0;
     display: inline-block;
+}
+
+.info :deep(.classic-notices-after-name) {
+    margin-right: 0;
+    margin-left: 0.5rem;
 }
 
 .btn-link {
