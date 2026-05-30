@@ -355,7 +355,7 @@ test.describe("Status Page", () => {
         await page.getByTestId("fluent-service-row-toggle").first().click();
         await expect(page.getByTestId("fluent-service-expanded")).toBeVisible();
         await expect(page.getByTestId("fluent-performance-stats")).toBeVisible();
-        await expect(page.locator(".heartbeat-canvas")).toHaveCount(2);
+        await expect(page.locator(".heartbeat-canvas")).toHaveCount(1);
         await expect(page.getByTestId("monitor-name")).toContainText(monitorName);
 
         // Link incident to monitor and verify it appears on expand
@@ -410,7 +410,7 @@ test.describe("Status Page", () => {
         await page.getByTestId("save-button").click();
         await expect(page.getByTestId("edit-sidebar")).toHaveCount(0);
 
-        await expect(page.getByTestId("classic-outage-count")).toHaveText("1");
+        await expect(page.getByTestId("status-page-outage-indicator")).toContainText("1");
         await page.getByTestId("classic-service-row-toggle").first().click();
         await expect(page.getByTestId("classic-service-expanded")).toBeVisible();
         await expect(page.getByTestId("status-page-linked-incident")).toContainText(linkedTitle);

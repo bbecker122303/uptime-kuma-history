@@ -1,5 +1,10 @@
 <template>
-    <div class="fluent-service-row" :class="{ 'is-expanded': isExpanded }" data-testid="monitor">
+    <div
+        class="fluent-service-row"
+        :class="{ 'is-expanded': isExpanded }"
+        data-testid="monitor"
+        :data-monitor-id="monitor.id"
+    >
         <div
             class="fluent-service-row-header"
             :class="{ expanded: isExpanded }"
@@ -33,13 +38,10 @@
 
                 <div class="fluent-service-main">
                     <p class="fluent-service-name">
-                        <span
+                        <StatusPageOutageIndicator
                             v-if="linkedIncidents.length > 0 && !editMode"
-                            class="fluent-outage-badge"
-                            data-testid="fluent-outage-count"
-                        >
-                            {{ linkedIncidents.length }}
-                        </span>
+                            :count="linkedIncidents.length"
+                        />
                         <a
                             v-if="showLink"
                             :href="monitor.url"
@@ -88,25 +90,8 @@
         </div>
 
         <div v-show="isExpanded" class="fluent-service-expanded" data-testid="fluent-service-expanded">
-            <div class="fluent-performance-stats" data-testid="fluent-performance-stats">
-                <div class="fluent-stat">
-                    <span class="fluent-stat-label">{{ uptimePeriodLabel }}</span>
-                    <span class="fluent-stat-value">{{ uptimeText }}</span>
-                </div>
-                <div v-if="latestPingText" class="fluent-stat">
-                    <span class="fluent-stat-label">{{ $t("Response") }}</span>
-                    <span class="fluent-stat-value">{{ latestPingText }}</span>
-                </div>
-            </div>
+            <FluentServiceStats :monitor="monitor" :public-history-days="publicHistoryDays" />
             <FluentServiceOutages :incidents="linkedIncidents" />
-            <div class="fluent-heartbeat-panel">
-                <HeartbeatBar
-                    size="mid"
-                    :monitor-id="monitor.id"
-                    :heartbeat-bar-days="publicHistoryDays"
-                    color-source="status-page"
-                />
-            </div>
         </div>
     </div>
 </template>
@@ -114,12 +99,16 @@
 <script>
 import HeartbeatBar from "../HeartbeatBar.vue";
 import FluentServiceOutages from "./FluentServiceOutages.vue";
+import FluentServiceStats from "./FluentServiceStats.vue";
+import StatusPageOutageIndicator from "../StatusPageOutageIndicator.vue";
 import { getFluentServiceStatusForMonitor } from "../../util/fluent-service-status.js";
 
 export default {
     components: {
         HeartbeatBar,
         FluentServiceOutages,
+        FluentServiceStats,
+        StatusPageOutageIndicator,
     },
     props: {
         monitor: {
@@ -163,14 +152,9 @@ export default {
         status() {
             return getFluentServiceStatusForMonitor(this.monitor.id, this.$root);
         },
-        uptimeType() {
-            if (this.publicHistoryDays > 0) {
-                return String(this.publicHistoryDays);
-            }
-            return "24";
-        },
         uptimeText() {
-            const key = `${this.monitor.id}_${this.uptimeType}`;
+            const uptimeType = this.publicHistoryDays > 0 ? String(this.publicHistoryDays) : "24";
+            const key = `${this.monitor.id}_${uptimeType}`;
             if (this.$root.uptimeList[key] !== undefined) {
                 let result = Math.round(this.$root.uptimeList[key] * 10000) / 100;
                 if (this.$route.path.startsWith("/status") && result > 100) {
@@ -185,13 +169,6 @@ export default {
                 return this.$t("publicHistoryDaysOption", [this.publicHistoryDays]);
             }
             return this.$t("statusPageFluentUptime24h");
-        },
-        latestPingText() {
-            const hb = this.$root.lastHeartbeatList?.[this.monitor.id];
-            if (hb && (hb.ping || hb.ping === 0)) {
-                return `${hb.ping} ms`;
-            }
-            return null;
         },
         hasMeta() {
             return (

@@ -48,6 +48,23 @@
                     </div>
                     <!-- eslint-disable-next-line vue/no-v-html-->
                     <div class="incident-content mt-1" v-html="getIncidentHTML(incident.content)"></div>
+                    <div
+                        v-if="affectedMonitors(incident).length > 0"
+                        class="incident-affected-services mt-2"
+                        data-testid="incident-affected-services"
+                    >
+                        <span class="incident-affected-label">{{ $t("statusPageAffectedServices") }}:</span>
+                        <button
+                            v-for="monitor in affectedMonitors(incident)"
+                            :key="monitor.id"
+                            type="button"
+                            class="incident-service-link"
+                            data-testid="incident-affected-service-link"
+                            @click="goToMonitor(monitor.id)"
+                        >
+                            {{ monitor.name }}
+                        </button>
+                    </div>
                     <div class="incident-meta text-muted small mt-2">
                         <div>{{ $t("createdAt", { date: datetime(incident.createdDate) }) }}</div>
                         <div v-if="incident.lastUpdatedDate">
@@ -84,6 +101,49 @@ export default {
     },
     emits: ["edit-incident", "delete-incident", "resolve-incident"],
     methods: {
+        /**
+         * Monitors linked to this incident (public status page monitors only)
+         * @param {object} incident Incident with monitorIds
+         * @returns {{ id: number, name: string }[]}
+         */
+        affectedMonitors(incident) {
+            const ids = incident.monitorIds || [];
+            if (!ids.length || !this.$root.publicMonitorList) {
+                return [];
+            }
+
+            return ids
+                .map((id) => {
+                    const monitor = this.$root.publicMonitorList[id];
+                    if (!monitor) {
+                        return null;
+                    }
+                    return { id: monitor.id, name: monitor.name };
+                })
+                .filter(Boolean);
+        },
+
+        /**
+         * Scroll to a service row on the status page and expand linked outages when possible
+         * @param {number} monitorId Monitor id
+         * @returns {void}
+         */
+        goToMonitor(monitorId) {
+            const row = document.querySelector(`[data-monitor-id="${monitorId}"]`);
+            if (!row) {
+                return;
+            }
+
+            row.scrollIntoView({ behavior: "smooth", block: "center" });
+
+            const toggle = row.querySelector(
+                '[data-testid="fluent-service-row-toggle"], [data-testid="classic-service-row-toggle"]'
+            );
+            if (toggle && toggle.getAttribute("aria-expanded") !== "true") {
+                toggle.click();
+            }
+        },
+
         /**
          * Get sanitized HTML for incident content
          * @param {string} content - Markdown content
@@ -135,6 +195,37 @@ export default {
 
             .incident-meta {
                 font-size: 12px;
+            }
+
+            .incident-affected-services {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 0.35rem 0.5rem;
+            }
+
+            .incident-affected-label {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: $secondary;
+            }
+
+            .incident-service-link {
+                display: inline-block;
+                padding: 0.125rem 0.5rem;
+                font-size: 0.75rem;
+                line-height: 1.3;
+                color: $primary;
+                background: transparent;
+                border: 1px solid rgba(0, 0, 0, 0.12);
+                border-radius: 4px;
+                cursor: pointer;
+                text-decoration: none;
+
+                &:hover {
+                    background: rgba(0, 0, 0, 0.04);
+                    text-decoration: underline;
+                }
             }
         }
     }

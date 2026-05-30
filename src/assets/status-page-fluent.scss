@@ -332,21 +332,6 @@ body.dark.status-page-fluent {
     margin-top: 0.5rem;
 }
 
-.fluent-outage-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.25rem;
-    height: 1.25rem;
-    margin-right: 0.5rem;
-    padding: 0 0.35rem;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #fff;
-    background: var(--sp-warning, #ca5010);
-    border-radius: 2px;
-    vertical-align: middle;
-}
 
 .fluent-edit-actions {
     display: flex;

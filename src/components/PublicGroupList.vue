@@ -50,6 +50,7 @@
                                     class="item"
                                     :class="{ 'is-expanded': expandedMonitorId === monitor.element.id }"
                                     data-testid="monitor"
+                                    :data-monitor-id="monitor.element.id"
                                 >
                                     <div
                                         class="monitor-row-header"
@@ -120,16 +121,13 @@
                                                         :type="uptimeType"
                                                         :pill="true"
                                                     />
-                                                    <span
+                                                    <StatusPageOutageIndicator
                                                         v-if="
                                                             !editMode &&
                                                             incidentsForMonitor(monitor.element.id).length > 0
                                                         "
-                                                        class="classic-outage-badge"
-                                                        data-testid="classic-outage-count"
-                                                    >
-                                                        {{ incidentsForMonitor(monitor.element.id).length }}
-                                                    </span>
+                                                        :count="incidentsForMonitor(monitor.element.id).length"
+                                                    />
                                                     <a
                                                         v-if="showLink(monitor)"
                                                         :href="monitor.element.url"
@@ -209,6 +207,7 @@ import Uptime from "./Uptime.vue";
 import Tag from "./Tag.vue";
 import Status from "./Status.vue";
 import StatusPageLinkedOutages from "./StatusPageLinkedOutages.vue";
+import StatusPageOutageIndicator from "./StatusPageOutageIndicator.vue";
 
 export default {
     components: {
@@ -219,6 +218,7 @@ export default {
         Tag,
         Status,
         StatusPageLinkedOutages,
+        StatusPageOutageIndicator,
     },
     props: {
         /** Are we in edit mode? */
@@ -546,22 +546,6 @@ export default {
     font-size: 0.7rem;
     color: #bbb;
     transition: transform 0.2s $easing-in;
-}
-
-.classic-outage-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.25rem;
-    height: 1.25rem;
-    margin-left: 0.35rem;
-    padding: 0 0.35rem;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #fff;
-    background: $warning;
-    border-radius: 4px;
-    vertical-align: middle;
 }
 
 .classic-monitor-expanded {
