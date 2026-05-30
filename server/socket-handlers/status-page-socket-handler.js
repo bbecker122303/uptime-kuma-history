@@ -69,9 +69,12 @@ module.exports.statusPageSocketHandler = (socket) => {
 
             await R.store(incidentBean);
 
+            const { setIncidentMonitorIds } = require("../incident-monitor");
+            const monitorIds = await setIncidentMonitorIds(incidentBean.id, incident.monitorIds, statusPageID);
+
             callback({
                 ok: true,
-                incident: incidentBean.toPublicJSON(),
+                incident: incidentBean.toPublicJSON(monitorIds),
             });
         } catch (error) {
             callback({
@@ -165,15 +168,18 @@ module.exports.statusPageSocketHandler = (socket) => {
             bean.content = incident.content;
             bean.style = incident.style;
             bean.pin = incident.pin !== false;
-            bean.lastUpdatedDate = R.isoDateTime(dayjs.utc());
+            bean.last_updated_date = R.isoDateTime(dayjs.utc());
 
             await R.store(bean);
+
+            const { setIncidentMonitorIds } = require("../incident-monitor");
+            const monitorIds = await setIncidentMonitorIds(bean.id, incident.monitorIds, statusPageID);
 
             callback({
                 ok: true,
                 msg: "Saved.",
                 msgi18n: true,
-                incident: bean.toPublicJSON(),
+                incident: bean.toPublicJSON(monitorIds),
             });
         } catch (error) {
             callback({
@@ -337,6 +343,9 @@ module.exports.statusPageSocketHandler = (socket) => {
             statusPage.show_only_last_heartbeat = config.showOnlyLastHeartbeat;
             statusPage.show_certificate_expiry = config.showCertificateExpiry;
             statusPage.public_history_days = Math.max(0, Math.min(90, Math.floor(Number(config.publicHistoryDays) || 0)));
+            const { stringifyThemeColors, normalizePageStyle } = require("../status-page-theme");
+            statusPage.theme_colors = stringifyThemeColors(config.themeColors);
+            statusPage.page_style = normalizePageStyle(config.pageStyle);
             statusPage.modified_date = R.isoDateTime();
             statusPage.analytics_id = config.analyticsId;
             statusPage.analytics_script_url = config.analyticsScriptUrl;
@@ -460,6 +469,7 @@ module.exports.statusPageSocketHandler = (socket) => {
             statusPage.slug = slug;
             statusPage.title = title;
             statusPage.theme = "auto";
+            statusPage.page_style = "classic";
             statusPage.icon = "";
             statusPage.autoRefreshInterval = 300;
             await R.store(statusPage);

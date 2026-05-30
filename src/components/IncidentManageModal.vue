@@ -61,6 +61,8 @@
                                 {{ $t("Pinned incidents are shown prominently on the status page") }}
                             </div>
                         </div>
+
+                        <IncidentMonitorPicker v-model="form.monitorIds" :options="availableMonitors" />
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -90,16 +92,22 @@
 <script>
 import { Modal } from "bootstrap";
 import Confirm from "./Confirm.vue";
+import IncidentMonitorPicker from "./IncidentMonitorPicker.vue";
 
 export default {
     name: "IncidentManageModal",
     components: {
         Confirm,
+        IncidentMonitorPicker,
     },
     props: {
         slug: {
             type: String,
             required: true,
+        },
+        availableMonitors: {
+            type: Array,
+            default: () => [],
         },
     },
     emits: ["incident-updated"],
@@ -114,6 +122,7 @@ export default {
                 content: "",
                 style: "warning",
                 pin: true,
+                monitorIds: [],
             },
         };
     },
@@ -133,6 +142,7 @@ export default {
                 content: incident.content,
                 style: incident.style || "warning",
                 pin: !!incident.pin,
+                monitorIds: [...(incident.monitorIds || [])],
             };
             this.modal.show();
         },

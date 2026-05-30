@@ -1,0 +1,399 @@
+// Microsoft service health style tokens (used under body.status-page-fluent)
+body.status-page-fluent {
+    --sp-primary: #0078d4;
+    --sp-bg: #faf9f8;
+    --sp-card: #ffffff;
+    --sp-card-border: #edebe9;
+    --sp-success: #107c10;
+    --sp-warning: #ca5010;
+    --sp-danger: #d13438;
+    --sp-text: #242424;
+    --sp-text-secondary: #605e5c;
+    --sp-radius: 2px;
+    --beat-up-color: var(--sp-success);
+    --beat-down-color: var(--sp-danger);
+    --beat-pending-color: var(--sp-warning);
+    --beat-maintenance-color: #0078d4;
+    --beat-empty-color: #e1dfdd;
+
+    background-color: var(--sp-bg) !important;
+    color: var(--sp-text);
+    font-family: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+body.dark.status-page-fluent {
+    --sp-bg: #1b1a19;
+    --sp-card: #292827;
+    --sp-card-border: #3b3a39;
+    --sp-text: #f3f2f1;
+    --sp-text-secondary: #c8c6c4;
+    --beat-empty-color: #3b3a39;
+}
+
+.fluent-shell {
+    max-width: 1140px;
+    margin: 1.5rem auto 2.5rem;
+    padding: 0 24px;
+}
+
+.fluent-page-header {
+    margin-bottom: 1.5rem;
+
+    .fluent-title-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 0.5rem;
+    }
+
+    .fluent-logo {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--sp-radius);
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+
+    .fluent-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        line-height: 1.3;
+        color: var(--sp-text);
+        margin: 0;
+    }
+
+    .fluent-admin-actions {
+        margin-top: 0.75rem;
+    }
+}
+
+.fluent-health-summary {
+    margin-bottom: 1.75rem;
+    padding-left: 12px;
+    border-left: 4px solid var(--sp-success);
+
+    &.fluent-health-degraded {
+        border-left-color: var(--sp-warning);
+    }
+
+    &.fluent-health-down {
+        border-left-color: var(--sp-danger);
+    }
+
+    &.fluent-health-maintenance {
+        border-left-color: var(--sp-primary);
+    }
+
+    &.fluent-health-unknown {
+        border-left-color: var(--sp-card-border);
+    }
+
+    .fluent-health-headline {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        line-height: 1.4;
+        color: var(--sp-text);
+    }
+}
+
+.fluent-product-section {
+    margin-bottom: 2rem;
+}
+
+.fluent-section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--sp-text);
+    margin: 0 0 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .collapse-toggle {
+        cursor: pointer;
+        color: var(--sp-text-secondary);
+    }
+
+    .chevron {
+        font-size: 0.75rem;
+        transition: transform 0.2s ease;
+
+        &.collapsed {
+            transform: rotate(-90deg);
+        }
+    }
+}
+
+.fluent-card {
+    background: var(--sp-card);
+    border: 1px solid var(--sp-card-border);
+    border-radius: var(--sp-radius);
+    overflow: hidden;
+}
+
+.fluent-service-row {
+    border-bottom: 1px solid var(--sp-card-border);
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.fluent-service-row-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.12s ease;
+
+    &:hover {
+        background: #f3f2f1;
+    }
+
+    body.dark.status-page-fluent &:hover {
+        background: #323130;
+    }
+
+    .fluent-expand-icon {
+        flex-shrink: 0;
+        width: 1rem;
+        margin-top: 0.35rem;
+        color: var(--sp-text-secondary);
+        font-size: 0.7rem;
+        transition: transform 0.2s ease;
+    }
+
+    &.expanded .fluent-expand-icon {
+        transform: rotate(90deg);
+    }
+}
+
+.fluent-service-row-grid {
+    display: grid;
+    grid-template-columns: 6.5rem minmax(10rem, 1fr) minmax(12rem, 1.35fr);
+    align-items: center;
+    gap: 0.75rem 1rem;
+    flex: 1;
+    min-width: 0;
+
+    @media (max-width: 720px) {
+        grid-template-columns: 6.5rem 1fr;
+
+        .fluent-service-metrics {
+            grid-column: 1 / -1;
+            padding-left: 0;
+        }
+    }
+}
+
+.fluent-service-metrics {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    min-width: 0;
+}
+
+.fluent-uptime-value {
+    flex-shrink: 0;
+    min-width: 3rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--sp-text-secondary);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.fluent-inline-bar {
+    flex: 1;
+    min-width: 0;
+
+    .wrap {
+        width: 100%;
+    }
+}
+
+.fluent-metrics-hint {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--sp-text-secondary);
+
+    @media (max-width: 900px) {
+        display: none;
+    }
+}
+
+.fluent-status-label {
+    flex-shrink: 0;
+    min-width: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.4;
+
+    &.tone-operational {
+        color: var(--sp-success);
+    }
+
+    &.tone-degraded {
+        color: var(--sp-warning);
+    }
+
+    &.tone-down {
+        color: var(--sp-danger);
+    }
+
+    &.tone-maintenance {
+        color: var(--sp-primary);
+    }
+
+    &.tone-unknown {
+        color: var(--sp-text-secondary);
+    }
+}
+
+.fluent-service-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.fluent-service-name {
+    font-size: 0.9375rem;
+    font-weight: 400;
+    color: var(--sp-text);
+    margin: 0;
+    word-break: break-word;
+
+    a {
+        color: var(--sp-primary);
+        text-decoration: none;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
+
+.fluent-service-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+}
+
+.fluent-tag-chip {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    color: var(--sp-text-secondary);
+    background: transparent;
+    border: 1px solid var(--sp-card-border);
+    border-radius: var(--sp-radius);
+}
+
+.fluent-service-row:not(.is-expanded) .fluent-service-expanded {
+    display: none !important;
+}
+
+.fluent-service-expanded {
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid var(--sp-card-border);
+    background: #faf9f8;
+
+    body.dark.status-page-fluent & {
+        background: #252423;
+    }
+}
+
+.fluent-performance-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.fluent-stat-label {
+    display: block;
+    margin-bottom: 0.15rem;
+    font-size: 0.75rem;
+    color: var(--sp-text-secondary);
+}
+
+.fluent-stat-value {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--sp-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.fluent-heartbeat-panel {
+    margin-top: 0.5rem;
+}
+
+.fluent-outage-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.5rem;
+    padding: 0 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #fff;
+    background: var(--sp-warning, #ca5010);
+    border-radius: 2px;
+    vertical-align: middle;
+}
+
+.fluent-edit-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+
+    .action {
+        color: #a19f9d;
+        cursor: pointer;
+
+        &.remove {
+            color: var(--sp-danger);
+        }
+
+        &.drag {
+            cursor: grab;
+        }
+    }
+}
+
+.fluent-empty-monitors {
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--sp-text-secondary);
+    font-size: 0.875rem;
+}
+
+.fluent-incident-card,
+.fluent-maintenance-card {
+    background: var(--sp-card);
+    border: 1px solid var(--sp-card-border);
+    border-radius: var(--sp-radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+}
+
+body.status-page-fluent .btn-primary {
+    background-color: var(--sp-primary);
+    border-color: var(--sp-primary);
+    border-radius: var(--sp-radius);
+    box-shadow: none;
+
+    &:hover,
+    &:focus {
+        background-color: #106ebe;
+        border-color: #106ebe;
+        box-shadow: none;
+    }
+}

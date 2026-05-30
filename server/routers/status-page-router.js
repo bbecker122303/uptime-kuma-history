@@ -7,33 +7,11 @@ const { R } = require("redbean-node");
 const { badgeConstants } = require("../../src/util");
 const { makeBadge } = require("badge-maker");
 const { UptimeCalculator } = require("../uptime-calculator");
+const { buildPublicHeartbeatList, downsampleHeartbeats, MAX_PUBLIC_HEARTBEATS, getEffectiveHistoryDays } = require("../public-heartbeat-list");
 const dayjs = require("dayjs");
 const utc = require("dayjs/plugin/utc");
 
 dayjs.extend(utc);
-
-const MAX_PUBLIC_HEARTBEATS = 1500;
-
-/**
- * Reduce heartbeat list to at most maxCount entries while preserving order.
- * @param {object[]} list Heartbeats in chronological order
- * @param {number} maxCount Maximum number of entries
- * @returns {object[]} Downsampled list
- */
-function downsampleHeartbeats(list, maxCount) {
-    if (list.length <= maxCount) {
-        return list;
-    }
-
-    const result = [];
-    const step = list.length / maxCount;
-
-    for (let i = 0; i < maxCount; i++) {
-        result.push(list[Math.floor(i * step)]);
-    }
-
-    return result;
-}
 
 let router = express.Router();
 
@@ -121,21 +99,27 @@ router.get("/api/status-page/heartbeat/:slug", cache("1 minutes"), async (reques
             let list;
 
             if (publicHistoryDays > 0) {
-                const since = dayjs.utc().subtract(publicHistoryDays, "day").format("YYYY-MM-DD HH:mm:ss");
+                const statBeats = await buildPublicHeartbeatList(monitorID, publicHistoryDays);
 
-                list = await R.getAll(
-                    `
-                    SELECT * FROM heartbeat
-                    WHERE monitor_id = ?
-                    AND time >= ?
-                    ORDER BY time ASC
-                `,
-                    [monitorID, since]
-                );
+                if (statBeats) {
+                    heartbeatList[monitorID] = statBeats;
+                } else {
+                    const since = dayjs.utc().subtract(publicHistoryDays, "day").format("YYYY-MM-DD HH:mm:ss");
 
-                list = R.convertToBeans("heartbeat", list);
-                list = downsampleHeartbeats(list, MAX_PUBLIC_HEARTBEATS);
-                heartbeatList[monitorID] = list.map((row) => row.toPublicJSON());
+                    list = await R.getAll(
+                        `
+                        SELECT * FROM heartbeat
+                        WHERE monitor_id = ?
+                        AND time >= ?
+                        ORDER BY time ASC
+                    `,
+                        [monitorID, since]
+                    );
+
+                    list = R.convertToBeans("heartbeat", list);
+                    list = downsampleHeartbeats(list, MAX_PUBLIC_HEARTBEATS);
+                    heartbeatList[monitorID] = list.map((row) => row.toPublicJSON());
+                }
             } else {
                 list = await R.getAll(
                     `
@@ -154,8 +138,10 @@ router.get("/api/status-page/heartbeat/:slug", cache("1 minutes"), async (reques
             const uptimeCalculator = await UptimeCalculator.getUptimeCalculator(monitorID);
 
             if (publicHistoryDays > 0) {
+                const beats = heartbeatList[monitorID];
+                const effectiveDays = getEffectiveHistoryDays(beats, publicHistoryDays);
                 uptimeList[`${monitorID}_${publicHistoryDays}`] = uptimeCalculator
-                    .getDataByDuration(`${publicHistoryDays}d`)
+                    .getDataByDuration(`${effectiveDays}d`)
                     .uptime;
             } else {
                 uptimeList[`${monitorID}_24`] = uptimeCalculator.get24Hour().uptime;

@@ -323,4 +323,96 @@ test.describe("Status Page", () => {
 
         await screenshot(testInfo, page);
     });
+
+    test("fluent layout summary and expandable heartbeat", async ({ page }) => {
+        const monitorName = "Fluent Layout Monitor";
+
+        await page.goto("./add");
+        await login(page);
+        await page.getByTestId("monitor-type-select").selectOption("http");
+        await page.getByTestId("friendly-name-input").fill(monitorName);
+        await page.getByTestId("url-input").fill("https://www.example.com");
+        await page.getByTestId("save-button").click();
+        await page.waitForURL("/dashboard/*");
+
+        await page.goto("./add-status-page");
+        await page.getByTestId("name-input").fill("Fluent");
+        await page.getByTestId("slug-input").fill("fluent-layout");
+        await page.getByTestId("submit-button").click();
+        await page.waitForURL("/status/fluent-layout?edit");
+
+        await page.getByTestId("page-style-select").selectOption("fluent");
+        await page.getByTestId("add-group-button").click();
+        await page.getByTestId("group-name").fill("Product Group");
+        await page.getByTestId("monitor-select").click();
+        await page.getByTestId("monitor-select").getByRole("option", { name: monitorName }).click();
+        await page.getByTestId("save-button").click();
+        await expect(page.getByTestId("edit-sidebar")).toHaveCount(0);
+
+        await expect(page.getByTestId("fluent-health-headline")).toContainText("operational");
+        await expect(page.getByTestId("fluent-inline-heartbeat")).toHaveCount(1);
+
+        await page.getByTestId("fluent-service-row-toggle").first().click();
+        await expect(page.getByTestId("fluent-service-expanded")).toBeVisible();
+        await expect(page.getByTestId("fluent-performance-stats")).toBeVisible();
+        await expect(page.locator(".heartbeat-canvas")).toHaveCount(2);
+        await expect(page.getByTestId("monitor-name")).toContainText(monitorName);
+
+        // Link incident to monitor and verify it appears on expand
+        const linkedTitle = "DSP API outage";
+        await page.getByTestId("edit-button").click();
+        await page.getByTestId("create-incident-button").click();
+        await page.getByTestId("incident-title").fill(linkedTitle);
+        await page.getByTestId("incident-content-editable").fill("Intermittent errors.");
+        await page.getByTestId("incident-monitor-select").click();
+        await page.getByTestId("incident-monitor-select").getByRole("option", { name: monitorName }).click();
+        await page.getByTestId("post-incident-button").click();
+        await page.getByTestId("save-button").click();
+        await expect(page.getByTestId("edit-sidebar")).toHaveCount(0);
+
+        await page.getByTestId("fluent-service-row-toggle").first().click();
+        await expect(page.getByTestId("status-page-linked-incident")).toContainText(linkedTitle);
+    });
+
+    test("classic layout shows linked outages when service row is clicked", async ({ page }) => {
+        const monitorName = "Classic Linked Monitor";
+
+        await page.goto("./add");
+        await login(page);
+        await page.getByTestId("monitor-type-select").selectOption("http");
+        await page.getByTestId("friendly-name-input").fill(monitorName);
+        await page.getByTestId("url-input").fill("https://www.example.com");
+        await page.getByTestId("save-button").click();
+        await page.waitForURL("/dashboard/*");
+
+        await page.goto("./add-status-page");
+        await page.getByTestId("name-input").fill("Classic");
+        await page.getByTestId("slug-input").fill("classic-linked");
+        await page.getByTestId("submit-button").click();
+        await page.waitForURL("/status/classic-linked?edit");
+
+        await page.getByTestId("page-style-select").selectOption("classic");
+        await page.getByTestId("add-group-button").click();
+        await page.getByTestId("group-name").fill("Services");
+        await page.getByTestId("monitor-select").click();
+        await page.getByTestId("monitor-select").getByRole("option", { name: monitorName }).click();
+        await page.getByTestId("save-button").click();
+        await expect(page.getByTestId("edit-sidebar")).toHaveCount(0);
+
+        const linkedTitle = "Classic API outage";
+        await page.getByTestId("edit-button").click();
+        await page.getByTestId("create-incident-button").click();
+        await page.getByTestId("incident-title").fill(linkedTitle);
+        await page.getByTestId("incident-content-editable").fill("Elevated errors.");
+        await page.getByTestId("incident-monitor-select").click();
+        await page.getByTestId("incident-monitor-select").getByRole("option", { name: monitorName }).click();
+        await page.getByTestId("post-incident-button").click();
+        await page.getByTestId("save-button").click();
+        await expect(page.getByTestId("edit-sidebar")).toHaveCount(0);
+
+        await expect(page.getByTestId("classic-outage-count")).toHaveText("1");
+        await page.getByTestId("classic-service-row-toggle").first().click();
+        await expect(page.getByTestId("classic-service-expanded")).toBeVisible();
+        await expect(page.getByTestId("status-page-linked-incident")).toContainText(linkedTitle);
+    });
 });

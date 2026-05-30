@@ -18,7 +18,7 @@
             />
         </div>
         <div
-            v-if="!$root.isMobile && size !== 'small' && beatList.length > 4 && $root.styleElapsedTime !== 'none'"
+            v-if="!$root.isMobile && size !== 'small' && showElapsedTimeLabels && $root.styleElapsedTime !== 'none'"
             class="d-flex justify-content-between align-items-center word"
             :style="timeStyle"
         >
@@ -67,6 +67,12 @@ export default {
         heartbeatBarDays: {
             type: Number,
             default: 0,
+        },
+        /** Color source: default Bootstrap vars or status page Fluent vars */
+        colorSource: {
+            type: String,
+            default: "default",
+            validator: (value) => ["default", "status-page"].includes(value),
         },
     },
     data() {
@@ -221,21 +227,61 @@ export default {
         },
 
         /**
+         * Whether to show elapsed time labels under the bar
+         * @returns {boolean} Whether to show labels
+         */
+        showElapsedTimeLabels() {
+            if (!this.beatList || this.beatList.length === 0) {
+                return false;
+            }
+            // Configured history mode: show labels even for new monitors with few beats
+            if (this.normalizedHeartbeatBarDays > 0) {
+                return this.beatList.length > 0;
+            }
+            return this.beatList.length > 4;
+        },
+
+        /**
+         * Latest heartbeat for this monitor (prefer live data over aggregated history bars)
+         * @returns {object|undefined} Latest heartbeat
+         */
+        latestHeartbeat() {
+            const fromRoot = this.$root.lastHeartbeatList?.[this.monitorId];
+            if (fromRoot?.time) {
+                return fromRoot;
+            }
+            return this.shortBeatList.at(-1);
+        },
+
+        /**
          * Calculates the time elapsed since the first valid beat.
          * @returns {string} The time elapsed in minutes or hours.
          */
         timeSinceFirstBeat() {
-            if (this.normalizedHeartbeatBarDays === 1) {
-                return this.normalizedHeartbeatBarDays * 24 + "h";
-            }
-            if (this.normalizedHeartbeatBarDays >= 2) {
+            if (this.normalizedHeartbeatBarDays >= 1) {
+                const firstValidBeat = this.shortBeatList.find((b) => b !== 0 && b !== null && b?.time);
+
+                if (firstValidBeat?.time) {
+                    const minutes = dayjs().diff(dayjs.utc(firstValidBeat.time), "minutes");
+                    const configuredMinutes = this.normalizedHeartbeatBarDays * 24 * 60;
+
+                    // Show configured window only when data spans most of it.
+                    // Otherwise show actual span so the label matches the leftmost bar.
+                    if (minutes < configuredMinutes * 0.9) {
+                        return this.formatElapsedMinutes(minutes);
+                    }
+                }
+
+                if (this.normalizedHeartbeatBarDays === 1) {
+                    return this.normalizedHeartbeatBarDays * 24 + "h";
+                }
                 return this.normalizedHeartbeatBarDays + "d";
             }
 
             // Need to calculate from actual data
             const firstValidBeat = this.shortBeatList.at(this.numPadding);
             const minutes = dayjs().diff(dayjs.utc(firstValidBeat?.time), "minutes");
-            return minutes > 60 ? Math.floor(minutes / 60) + "h" : minutes + "m";
+            return this.formatElapsedMinutes(minutes);
         },
 
         /**
@@ -243,7 +289,7 @@ export default {
          * @returns {string} The elapsed time in a minutes, hours or "now".
          */
         timeSinceLastBeat() {
-            const lastValidBeat = this.shortBeatList.at(-1);
+            const lastValidBeat = this.latestHeartbeat;
             const seconds = dayjs().diff(dayjs.utc(lastValidBeat?.time), "seconds");
 
             let tolerance = 60 * 2; // default for when monitorList not available
@@ -368,6 +414,21 @@ export default {
         });
     },
     methods: {
+        /**
+         * Format elapsed minutes for display under the heartbeat bar
+         * @param {number} minutes Elapsed minutes
+         * @returns {string} Formatted elapsed time
+         */
+        formatElapsedMinutes(minutes) {
+            if (minutes >= 24 * 60) {
+                return Math.floor(minutes / (24 * 60)) + "d";
+            }
+            if (minutes > 60) {
+                return Math.floor(minutes / 60) + "h";
+            }
+            return minutes + "m";
+        },
+
         /**
          * Resize the heartbeat bar
          * @returns {void}
@@ -559,12 +620,27 @@ export default {
             // Cache CSS colors once per redraw
             const rootStyles = getComputedStyle(document.documentElement);
             const canvasStyles = getComputedStyle(canvas.parentElement);
+            const trim = (value) => (value || "").trim();
+            const useStatusPageColors = this.colorSource === "status-page";
+
             const colors = {
-                empty: canvasStyles.getPropertyValue("--beat-empty-color") || "#f0f8ff",
-                down: rootStyles.getPropertyValue("--bs-danger") || "#dc3545",
-                pending: rootStyles.getPropertyValue("--bs-warning") || "#ffc107",
-                maintenance: rootStyles.getPropertyValue("--maintenance") || "#1d4ed8",
-                up: rootStyles.getPropertyValue("--bs-primary") || "#5cdd8b",
+                empty: trim(canvasStyles.getPropertyValue("--beat-empty-color")) || "#f0f8ff",
+                down:
+                    trim(canvasStyles.getPropertyValue("--beat-down-color")) ||
+                    (useStatusPageColors ? "#d13438" : trim(rootStyles.getPropertyValue("--bs-danger"))) ||
+                    "#dc3545",
+                pending:
+                    trim(canvasStyles.getPropertyValue("--beat-pending-color")) ||
+                    (useStatusPageColors ? "#ca5010" : trim(rootStyles.getPropertyValue("--bs-warning"))) ||
+                    "#ffc107",
+                maintenance:
+                    trim(canvasStyles.getPropertyValue("--beat-maintenance-color")) ||
+                    trim(rootStyles.getPropertyValue("--maintenance")) ||
+                    "#1d4ed8",
+                up:
+                    trim(canvasStyles.getPropertyValue("--beat-up-color")) ||
+                    (useStatusPageColors ? "#107c10" : trim(rootStyles.getPropertyValue("--bs-primary"))) ||
+                    "#5cdd8b",
             };
 
             // Draw each beat

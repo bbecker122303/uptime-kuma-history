@@ -18,7 +18,7 @@ class Incident extends BeanModel {
      * Return an object that ready to parse to JSON for public
      * @returns {object} Object ready to parse
      */
-    toPublicJSON() {
+    toPublicJSON(monitorIds = null) {
         return {
             id: this.id,
             style: this.style,
@@ -29,6 +29,7 @@ class Incident extends BeanModel {
             createdDate: this.created_date,
             lastUpdatedDate: this.last_updated_date,
             status_page_id: this.status_page_id,
+            monitorIds: monitorIds ?? [],
         };
     }
 }

@@ -10,6 +10,8 @@ const config = require("../config");
 const dayjs = require("dayjs");
 
 const { setting } = require("../util-server");
+const { attachMonitorIdsToIncidents } = require("../incident-monitor");
+const { parseThemeColors, normalizePageStyle } = require("../status-page-theme");
 const {
     STATUS_PAGE_ALL_DOWN,
     STATUS_PAGE_ALL_UP,
@@ -320,7 +322,7 @@ class StatusPage extends BeanModel {
             "pin = 1 AND active = 1 AND status_page_id = ? ORDER BY created_date DESC",
             [statusPage.id]
         );
-        incidents = incidents.map((i) => i.toPublicJSON());
+        incidents = await attachMonitorIdsToIncidents(incidents.map((i) => i.toPublicJSON()));
 
         let maintenanceList = await StatusPage.getMaintenanceList(statusPage.id);
 
@@ -456,6 +458,8 @@ class StatusPage extends BeanModel {
             showCertificateExpiry: !!this.show_certificate_expiry,
             showOnlyLastHeartbeat: !!this.show_only_last_heartbeat,
             publicHistoryDays: this.public_history_days ?? 0,
+            themeColors: parseThemeColors(this.theme_colors),
+            pageStyle: normalizePageStyle(this.page_style),
             rssTitle: this.rss_title,
         };
     }
@@ -484,6 +488,8 @@ class StatusPage extends BeanModel {
             showCertificateExpiry: !!this.show_certificate_expiry,
             showOnlyLastHeartbeat: !!this.show_only_last_heartbeat,
             publicHistoryDays: this.public_history_days ?? 0,
+            themeColors: parseThemeColors(this.theme_colors),
+            pageStyle: normalizePageStyle(this.page_style),
             rssTitle: this.rss_title,
         };
     }
@@ -550,7 +556,7 @@ class StatusPage extends BeanModel {
         }
 
         return {
-            incidents: incidents.map((i) => i.toPublicJSON()),
+            incidents: await attachMonitorIdsToIncidents(incidents.map((i) => i.toPublicJSON())),
             total,
             nextCursor,
             hasMore,

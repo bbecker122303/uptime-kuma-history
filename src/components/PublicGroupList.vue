@@ -46,87 +46,149 @@
                             item-key="id"
                         >
                             <template #item="monitor">
-                                <div class="item" data-testid="monitor">
-                                    <div class="row">
-                                        <div class="col-9 col-xl-6 small-padding">
-                                            <div class="info">
-                                                <font-awesome-icon
-                                                    v-if="editMode"
-                                                    icon="arrows-alt-v"
-                                                    class="action drag me-3"
-                                                />
-                                                <font-awesome-icon
-                                                    v-if="editMode"
-                                                    icon="times"
-                                                    class="action remove me-3"
-                                                    @click="removeMonitor(group.index, monitor.index)"
-                                                />
+                                <div
+                                    class="item"
+                                    :class="{ 'is-expanded': expandedMonitorId === monitor.element.id }"
+                                    data-testid="monitor"
+                                >
+                                    <div
+                                        class="monitor-row-header"
+                                        :class="{
+                                            expanded: expandedMonitorId === monitor.element.id,
+                                            'has-linked-outages':
+                                                !editMode && incidentsForMonitor(monitor.element.id).length > 0,
+                                        }"
+                                        :role="
+                                            editMode || incidentsForMonitor(monitor.element.id).length === 0
+                                                ? undefined
+                                                : 'button'
+                                        "
+                                        :tabindex="
+                                            editMode || incidentsForMonitor(monitor.element.id).length === 0
+                                                ? undefined
+                                                : 0
+                                        "
+                                        :aria-expanded="
+                                            editMode || incidentsForMonitor(monitor.element.id).length === 0
+                                                ? undefined
+                                                : expandedMonitorId === monitor.element.id
+                                        "
+                                        data-testid="classic-service-row-toggle"
+                                        @click="onMonitorRowClick(monitor.element.id)"
+                                        @keydown.enter.prevent="onMonitorRowClick(monitor.element.id)"
+                                        @keydown.space.prevent="onMonitorRowClick(monitor.element.id)"
+                                    >
+                                        <div class="row">
+                                            <div class="col-9 col-xl-6 small-padding">
+                                                <div class="info">
+                                                    <font-awesome-icon
+                                                        v-if="
+                                                            !editMode &&
+                                                            incidentsForMonitor(monitor.element.id).length > 0
+                                                        "
+                                                        icon="chevron-right"
+                                                        class="monitor-expand-icon me-2"
+                                                    />
+                                                    <font-awesome-icon
+                                                        v-if="editMode"
+                                                        icon="arrows-alt-v"
+                                                        class="action drag me-3"
+                                                        @click.stop
+                                                    />
+                                                    <font-awesome-icon
+                                                        v-if="editMode"
+                                                        icon="times"
+                                                        class="action remove me-3"
+                                                        @click.stop="removeMonitor(group.index, monitor.index)"
+                                                    />
 
-                                                <font-awesome-icon
-                                                    v-if="editMode"
-                                                    icon="cog"
-                                                    class="action me-3 ms-0"
-                                                    :class="{ 'link-active': true, 'btn-link': true }"
-                                                    data-testid="monitor-settings"
-                                                    @click="$refs.monitorSettingDialog.show(group, monitor)"
-                                                />
-                                                <Status
-                                                    v-if="showOnlyLastHeartbeat"
-                                                    :status="statusOfLastHeartbeat(monitor.element.id)"
-                                                />
-                                                <Uptime
-                                                    v-else
-                                                    :monitor="monitor.element"
-                                                    :type="uptimeType"
-                                                    :pill="true"
-                                                />
-                                                <a
-                                                    v-if="showLink(monitor)"
-                                                    :href="monitor.element.url"
-                                                    class="item-name"
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    data-testid="monitor-name"
-                                                >
-                                                    {{ monitor.element.name }}
-                                                </a>
-                                                <p v-else class="item-name" data-testid="monitor-name">
-                                                    {{ monitor.element.name }}
-                                                </p>
+                                                    <font-awesome-icon
+                                                        v-if="editMode"
+                                                        icon="cog"
+                                                        class="action me-3 ms-0"
+                                                        :class="{ 'link-active': true, 'btn-link': true }"
+                                                        data-testid="monitor-settings"
+                                                        @click.stop="$refs.monitorSettingDialog.show(group, monitor)"
+                                                    />
+                                                    <Status
+                                                        v-if="showOnlyLastHeartbeat"
+                                                        :status="statusOfLastHeartbeat(monitor.element.id)"
+                                                    />
+                                                    <Uptime
+                                                        v-else
+                                                        :monitor="monitor.element"
+                                                        :type="uptimeType"
+                                                        :pill="true"
+                                                    />
+                                                    <span
+                                                        v-if="
+                                                            !editMode &&
+                                                            incidentsForMonitor(monitor.element.id).length > 0
+                                                        "
+                                                        class="classic-outage-badge"
+                                                        data-testid="classic-outage-count"
+                                                    >
+                                                        {{ incidentsForMonitor(monitor.element.id).length }}
+                                                    </span>
+                                                    <a
+                                                        v-if="showLink(monitor)"
+                                                        :href="monitor.element.url"
+                                                        class="item-name"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        data-testid="monitor-name"
+                                                        @click.stop
+                                                    >
+                                                        {{ monitor.element.name }}
+                                                    </a>
+                                                    <p v-else class="item-name" data-testid="monitor-name">
+                                                        {{ monitor.element.name }}
+                                                    </p>
+                                                </div>
+                                                <div class="extra-info" @click.stop>
+                                                    <div
+                                                        v-if="
+                                                            showCertificateExpiry &&
+                                                            monitor.element.certExpiryDaysRemaining
+                                                        "
+                                                    >
+                                                        <Tag
+                                                            :item="{
+                                                                name: $t('Cert Exp.'),
+                                                                value: formattedCertExpiryMessage(monitor),
+                                                                color: certExpiryColor(monitor),
+                                                            }"
+                                                            :size="'sm'"
+                                                        />
+                                                    </div>
+                                                    <div v-if="showTags">
+                                                        <Tag
+                                                            v-for="tag in monitor.element.tags"
+                                                            :key="tag"
+                                                            :item="tag"
+                                                            :size="'sm'"
+                                                            data-testid="monitor-tag"
+                                                        />
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div class="extra-info">
-                                                <div
-                                                    v-if="
-                                                        showCertificateExpiry && monitor.element.certExpiryDaysRemaining
-                                                    "
-                                                >
-                                                    <Tag
-                                                        :item="{
-                                                            name: $t('Cert Exp.'),
-                                                            value: formattedCertExpiryMessage(monitor),
-                                                            color: certExpiryColor(monitor),
-                                                        }"
-                                                        :size="'sm'"
-                                                    />
-                                                </div>
-                                                <div v-if="showTags">
-                                                    <Tag
-                                                        v-for="tag in monitor.element.tags"
-                                                        :key="tag"
-                                                        :item="tag"
-                                                        :size="'sm'"
-                                                        data-testid="monitor-tag"
-                                                    />
-                                                </div>
+                                            <div :key="$root.userHeartbeatBar" class="col-3 col-xl-6">
+                                                <HeartbeatBar
+                                                    size="mid"
+                                                    :monitor-id="monitor.element.id"
+                                                    :heartbeat-bar-days="publicHistoryDays"
+                                                />
                                             </div>
                                         </div>
-                                        <div :key="$root.userHeartbeatBar" class="col-3 col-xl-6">
-                                            <HeartbeatBar
-                                                size="mid"
-                                                :monitor-id="monitor.element.id"
-                                                :heartbeat-bar-days="publicHistoryDays"
-                                            />
-                                        </div>
+                                    </div>
+                                    <div
+                                        v-show="expandedMonitorId === monitor.element.id"
+                                        class="classic-monitor-expanded"
+                                        data-testid="classic-service-expanded"
+                                    >
+                                        <StatusPageLinkedOutages
+                                            :incidents="incidentsForMonitor(monitor.element.id)"
+                                        />
                                     </div>
                                 </div>
                             </template>
@@ -146,6 +208,7 @@ import HeartbeatBar from "./HeartbeatBar.vue";
 import Uptime from "./Uptime.vue";
 import Tag from "./Tag.vue";
 import Status from "./Status.vue";
+import StatusPageLinkedOutages from "./StatusPageLinkedOutages.vue";
 
 export default {
     components: {
@@ -155,6 +218,7 @@ export default {
         Uptime,
         Tag,
         Status,
+        StatusPageLinkedOutages,
     },
     props: {
         /** Are we in edit mode? */
@@ -179,9 +243,15 @@ export default {
             type: Number,
             default: 0,
         },
+        incidentHistory: {
+            type: Array,
+            default: () => [],
+        },
     },
     data() {
-        return {};
+        return {
+            expandedMonitorId: null,
+        };
     },
     computed: {
         showGroupDrag() {
@@ -195,6 +265,25 @@ export default {
         },
     },
     methods: {
+        incidentsForMonitor(monitorId) {
+            const linked = (this.incidentHistory || []).filter(
+                (incident) => Array.isArray(incident.monitorIds) && incident.monitorIds.includes(monitorId)
+            );
+            const active = linked.filter((incident) => incident.active && incident.pin);
+            const past = linked.filter((incident) => !(incident.active && incident.pin));
+            return [...active, ...past];
+        },
+
+        onMonitorRowClick(monitorId) {
+            if (this.editMode) {
+                return;
+            }
+            if (this.incidentsForMonitor(monitorId).length === 0) {
+                return;
+            }
+            this.expandedMonitorId = this.expandedMonitorId === monitorId ? null : monitorId;
+        },
+
         /**
          * Toggle collapsed state for a group
          * @param {object} group Group to toggle
@@ -264,7 +353,11 @@ export default {
          * @returns {void}
          */
         removeMonitor(groupIndex, index) {
+            const monitorId = this.$root.publicGroupList[groupIndex]?.monitorList[index]?.id;
             this.$root.publicGroupList[groupIndex].monitorList.splice(index, 1);
+            if (this.expandedMonitorId === monitorId) {
+                this.expandedMonitorId = null;
+            }
         },
 
         /**
@@ -428,5 +521,55 @@ export default {
 
 .bg-maintenance {
     background-color: $maintenance;
+}
+
+.monitor-row-header.has-linked-outages {
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.03);
+    }
+
+    body.dark & {
+        &:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+    }
+
+    &.expanded .monitor-expand-icon {
+        transform: rotate(90deg);
+    }
+}
+
+.monitor-expand-icon {
+    font-size: 0.7rem;
+    color: #bbb;
+    transition: transform 0.2s $easing-in;
+}
+
+.classic-outage-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    margin-left: 0.35rem;
+    padding: 0 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #fff;
+    background: $warning;
+    border-radius: 4px;
+    vertical-align: middle;
+}
+
+.classic-monitor-expanded {
+    padding: 0.75rem 1rem 1rem 2rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.08);
+
+    body.dark & {
+        border-top-color: rgba(255, 255, 255, 0.08);
+    }
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-    <div v-if="loadedTheme" class="container mt-3">
+    <div v-if="loadedTheme" :class="isFluentPageStyle ? '' : 'container mt-3'">
         <!-- Sidebar for edit mode -->
         <div v-if="enableEditMode" class="sidebar" data-testid="edit-sidebar">
             <div class="sidebar-body">
@@ -62,6 +62,20 @@
                         <option value="light">{{ $t("Light") }}</option>
                         <option value="dark">{{ $t("Dark") }}</option>
                     </select>
+                </div>
+
+                <div class="my-3">
+                    <label for="page-style" class="form-label">{{ $t("statusPageLayout") }}</label>
+                    <select
+                        id="page-style"
+                        v-model="config.pageStyle"
+                        class="form-select"
+                        data-testid="page-style-select"
+                    >
+                        <option value="classic">{{ $t("statusPageLayoutClassic") }}</option>
+                        <option value="fluent">{{ $t("statusPageLayoutFluent") }}</option>
+                    </select>
+                    <div class="form-text">{{ $t("statusPageLayoutDescription") }}</div>
                 </div>
 
                 <div class="my-3 form-check form-switch">
@@ -221,6 +235,43 @@
                     </div>
                 </div>
 
+                <!-- Theme colors (Fluent layout only) -->
+                <div v-if="isFluentPageStyle" class="my-3">
+                    <label class="form-label">{{ $t("statusPageColors") }}</label>
+                    <p class="form-text mb-2">{{ $t("statusPageColorsDescription") }}</p>
+                    <div class="color-controls">
+                        <div v-for="field in themeColorFields" :key="field.key" class="color-control-row">
+                            <label class="color-control-label" :for="'color-' + field.key">{{ field.label }}</label>
+                            <div class="color-control-inputs">
+                                <input
+                                    :id="'color-' + field.key"
+                                    type="color"
+                                    class="form-control form-control-color"
+                                    :value="colorPickerValue(field.key)"
+                                    @input="setThemeColor(field.key, $event.target.value)"
+                                />
+                                <input
+                                    type="text"
+                                    class="form-control form-control-sm color-hex-input"
+                                    :value="config.themeColors[field.key]"
+                                    :placeholder="field.placeholder"
+                                    spellcheck="false"
+                                    @input="setThemeColor(field.key, $event.target.value)"
+                                />
+                                <button
+                                    type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    :title="$t('Reset')"
+                                    :disabled="!config.themeColors[field.key]"
+                                    @click="clearThemeColor(field.key)"
+                                >
+                                    <font-awesome-icon icon="undo" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Custom CSS -->
                 <div class="my-3">
                     <div class="mb-1">{{ $t("Custom CSS") }}</div>
@@ -257,6 +308,285 @@
 
         <!-- Main Status Page -->
         <div :class="{ edit: enableEditMode }" class="main">
+            <FluentStatusPageLayout v-if="isFluentPageStyle" :css-vars="fluentPageCssVars">
+                <FluentPageHeader>
+                    <template #logo>
+                        <span class="logo-wrapper" @click="showImageCropUploadMethod">
+                            <button
+                                v-if="editMode"
+                                type="button"
+                                class="p-0 bg-transparent border-0 small-reset-btn reset-top-left"
+                                @click.stop="resetToDefaultImage"
+                            >
+                                <font-awesome-icon icon="times" class="text-danger" />
+                            </button>
+                            <img :src="logoURL" alt class="fluent-logo" :class="logoClass" />
+                            <font-awesome-icon v-if="enableEditMode" class="icon-upload" icon="upload" />
+                        </span>
+                        <ImageCropUpload
+                            v-model="showImageCropUpload"
+                            field="img"
+                            :width="128"
+                            :height="128"
+                            :langType="$i18n.locale"
+                            img-format="png"
+                            :noCircle="true"
+                            :noSquare="false"
+                            @crop-success="cropSuccess"
+                        />
+                    </template>
+                    <template #title>
+                        <Editable v-model="config.title" tag="span" :contenteditable="editMode" :noNL="true" />
+                    </template>
+                    <template v-if="hasToken" #actions>
+                        <div v-if="!enableEditMode">
+                            <button class="btn btn-primary mb-2 me-2" data-testid="edit-button" @click="edit">
+                                <font-awesome-icon icon="edit" />
+                                {{ $t("Edit Status Page") }}
+                            </button>
+                            <a href="/manage-status-page" class="btn btn-primary mb-2">
+                                <font-awesome-icon icon="tachometer-alt" />
+                                {{ $t("Go to Dashboard") }}
+                            </a>
+                        </div>
+                        <div v-else>
+                            <button
+                                class="btn btn-primary btn-add-group me-2"
+                                data-testid="create-incident-button"
+                                @click="createIncident"
+                            >
+                                <font-awesome-icon icon="bullhorn" />
+                                {{ $t("Create Incident") }}
+                            </button>
+                        </div>
+                    </template>
+                </FluentPageHeader>
+
+                <IncidentEditForm
+                    v-if="
+                        editIncidentMode &&
+                        incident !== null &&
+                        (!incident.id || !pageWideActiveIncidents.some((i) => i.id === incident.id))
+                    "
+                    v-model="incident"
+                    :available-monitors="statusPageMonitorOptions"
+                    @post="postIncident"
+                    @cancel="cancelIncident"
+                />
+
+                <template v-for="activeIncident in pageWideActiveIncidents" :key="activeIncident.id">
+                    <IncidentEditForm
+                        v-if="editIncidentMode && incident !== null && incident.id === activeIncident.id"
+                        v-model="incident"
+                        :available-monitors="statusPageMonitorOptions"
+                        @post="postIncident"
+                        @cancel="cancelIncident"
+                    />
+                    <div
+                        v-else
+                        class="fluent-incident-card incident"
+                        role="alert"
+                        :class="'bg-' + activeIncident.style"
+                        data-testid="incident"
+                    >
+                        <h4 class="alert-heading" data-testid="incident-title">{{ activeIncident.title }}</h4>
+                        <div
+                            class="content"
+                            data-testid="incident-content"
+                            v-html="getIncidentHTML(activeIncident.content)"
+                        ></div>
+                        <div class="date mt-3">
+                            {{
+                                $t("dateCreatedAtFromNow", {
+                                    date: $root.datetime(activeIncident.createdDate),
+                                    fromNow: dateFromNow(activeIncident.createdDate),
+                                })
+                            }}
+                            <br />
+                            <span v-if="activeIncident.lastUpdatedDate">
+                                {{
+                                    $t("lastUpdatedAtFromNow", {
+                                        date: $root.datetime(activeIncident.lastUpdatedDate),
+                                        fromNow: dateFromNow(activeIncident.lastUpdatedDate),
+                                    })
+                                }}
+                            </span>
+                        </div>
+                        <div v-if="editMode" class="mt-3">
+                            <button class="btn btn-light me-2" @click="resolveIncident(activeIncident)">
+                                <font-awesome-icon icon="check" />
+                                {{ $t("Resolve") }}
+                            </button>
+                            <button class="btn btn-light me-2" @click="editIncident(activeIncident)">
+                                <font-awesome-icon icon="edit" />
+                                {{ $t("Edit") }}
+                            </button>
+                            <button
+                                class="btn btn-light me-2"
+                                @click="$refs.incidentManageModal.showDelete(activeIncident)"
+                            >
+                                <font-awesome-icon icon="unlink" />
+                                {{ $t("Delete") }}
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <FluentHealthSummary :headline="fluentHealthHeadline" :banner-class="fluentHealthBannerClass" />
+
+                <template v-if="maintenanceList.length > 0">
+                    <div
+                        v-for="maintenance in maintenanceList"
+                        :key="maintenance.id"
+                        class="fluent-maintenance-card bg-maintenance"
+                        role="alert"
+                    >
+                        <h4 class="alert-heading">{{ maintenance.title }}</h4>
+                        <div class="content" v-html="maintenanceHTML(maintenance.description)"></div>
+                        <MaintenanceTime :maintenance="maintenance" />
+                    </div>
+                </template>
+
+                <strong v-if="editMode">{{ $t("Description") }}:</strong>
+                <Editable
+                    v-if="enableEditMode"
+                    v-model="config.description"
+                    :contenteditable="editMode"
+                    tag="div"
+                    class="mb-4 description"
+                    data-testid="description-editable"
+                />
+                <div
+                    v-if="!enableEditMode && config.description"
+                    class="mb-4 description"
+                    data-testid="description"
+                    v-html="descriptionHTML"
+                ></div>
+
+                <div v-if="editMode" class="mb-4">
+                    <button class="btn btn-primary btn-add-group me-2" data-testid="add-group-button" @click="addGroup">
+                        <font-awesome-icon icon="plus" />
+                        {{ $t("Add Group") }}
+                    </button>
+                    <div class="mt-3">
+                        <div v-if="sortedMonitorList.length > 0 && loadedData">
+                            <label>{{ $t("Add a monitor") }}:</label>
+                            <VueMultiselect
+                                v-model="selectedMonitor"
+                                :options="sortedMonitorList"
+                                :multiple="false"
+                                :searchable="true"
+                                :placeholder="$t('Add a monitor')"
+                                label="name"
+                                trackBy="name"
+                                class="mt-3"
+                                data-testid="monitor-select"
+                            >
+                                <template #option="{ option }">
+                                    <div class="d-inline-flex">
+                                        <span>
+                                            {{ option.pathName }}
+                                            <Tag v-for="tag in option.tags" :key="tag" :item="tag" :size="'sm'" />
+                                        </span>
+                                    </div>
+                                </template>
+                            </VueMultiselect>
+                        </div>
+                        <div v-else class="text-center">
+                            {{ $t("No monitors available.") }}
+                            <router-link to="/add">{{ $t("Add one") }}</router-link>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div v-if="$root.publicGroupList.length === 0 && loadedData" class="text-center">
+                        👀 {{ $t("statusPageNothing") }}
+                    </div>
+                    <FluentPublicGroupList
+                        :edit-mode="enableEditMode"
+                        :show-tags="config.showTags"
+                        :show-certificate-expiry="config.showCertificateExpiry"
+                        :public-history-days="config.publicHistoryDays || 0"
+                        :incident-history="incidentHistory"
+                    />
+                </div>
+
+                <div v-if="pastIncidentCount > 0" class="past-incidents-section mb-4">
+                    <h2 class="past-incidents-title mb-3">{{ $t("Past Incidents") }}</h2>
+                    <div class="past-incidents-content">
+                        <div
+                            v-for="(dateGroup, dateKey) in groupedIncidentHistory"
+                            :key="dateKey"
+                            class="incident-date-group mb-4"
+                        >
+                            <h4 class="incident-date-header">{{ dateKey }}</h4>
+                            <div class="fluent-card incident-list-box">
+                                <IncidentHistory
+                                    :incidents="dateGroup"
+                                    :edit-mode="enableEditMode"
+                                    :loading="incidentHistoryLoading"
+                                    @edit-incident="$refs.incidentManageModal.showEdit($event)"
+                                    @delete-incident="$refs.incidentManageModal.showDelete($event)"
+                                    @resolve-incident="resolveIncident"
+                                />
+                            </div>
+                        </div>
+                        <div
+                            v-if="incidentHistoryHasMore"
+                            class="load-more-controls d-flex justify-content-center mt-3"
+                        >
+                            <button
+                                class="btn btn-outline-secondary btn-sm"
+                                :disabled="incidentHistoryLoading"
+                                @click="loadMoreIncidentHistory"
+                            >
+                                <span
+                                    v-if="incidentHistoryLoading"
+                                    class="spinner-border spinner-border-sm me-1"
+                                    role="status"
+                                ></span>
+                                {{ $t("Load More") }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="mt-5 mb-4">
+                    <div class="custom-footer-text text-start">
+                        <strong v-if="enableEditMode">{{ $t("Custom Footer") }}:</strong>
+                    </div>
+                    <Editable
+                        v-if="enableEditMode"
+                        v-model="config.footerText"
+                        tag="div"
+                        :contenteditable="enableEditMode"
+                        :noNL="false"
+                        class="alert-heading p-2"
+                        data-testid="custom-footer-editable"
+                    />
+                    <div
+                        v-if="!enableEditMode"
+                        class="alert-heading p-2"
+                        data-testid="footer-text"
+                        v-html="footerHTML"
+                    ></div>
+                    <p v-if="config.showPoweredBy" data-testid="powered-by">
+                        {{ $t("Powered by") }}
+                        <a target="_blank" rel="noopener noreferrer" href="https://github.com/louislam/uptime-kuma">
+                            {{ $t("Uptime Kuma") }}
+                        </a>
+                    </p>
+                    <div class="refresh-info mb-2">
+                        <div>{{ $t("lastUpdatedAt", { date: lastUpdateTimeDisplay }) }}</div>
+                        <div data-testid="update-countdown-text">
+                            {{ $t("statusPageRefreshIn", [updateCountdownText]) }}
+                        </div>
+                    </div>
+                </footer>
+            </FluentStatusPageLayout>
+
+            <template v-else>
             <!-- Logo & Title -->
             <h1 class="mb-4 title-flex">
                 <!-- Logo -->
@@ -322,19 +652,21 @@
                 v-if="
                     editIncidentMode &&
                     incident !== null &&
-                    (!incident.id || !activeIncidents.some((i) => i.id === incident.id))
+                    (!incident.id || !pageWideActiveIncidents.some((i) => i.id === incident.id))
                 "
                 v-model="incident"
+                :available-monitors="statusPageMonitorOptions"
                 @post="postIncident"
                 @cancel="cancelIncident"
             />
 
             <!-- Active Pinned Incidents -->
-            <template v-for="activeIncident in activeIncidents" :key="activeIncident.id">
+            <template v-for="activeIncident in pageWideActiveIncidents" :key="activeIncident.id">
                 <!-- Edit mode for this specific incident -->
                 <IncidentEditForm
                     v-if="editIncidentMode && incident !== null && incident.id === activeIncident.id"
                     v-model="incident"
+                    :available-monitors="statusPageMonitorOptions"
                     @post="postIncident"
                     @cancel="cancelIncident"
                 />
@@ -514,6 +846,7 @@
                     :show-certificate-expiry="config.showCertificateExpiry"
                     :show-only-last-heartbeat="config.showOnlyLastHeartbeat"
                     :public-history-days="config.publicHistoryDays || 0"
+                    :incident-history="incidentHistory"
                 />
             </div>
 
@@ -559,14 +892,6 @@
                 </div>
             </div>
 
-            <!-- Incident Manage Modal -->
-            <IncidentManageModal
-                v-if="enableEditMode"
-                ref="incidentManageModal"
-                :slug="slug"
-                @incident-updated="loadIncidentHistory"
-            />
-
             <footer class="mt-5 mb-4">
                 <div class="custom-footer-text text-start">
                     <strong v-if="enableEditMode">{{ $t("Custom Footer") }}:</strong>
@@ -603,6 +928,15 @@
                     </div>
                 </div>
             </footer>
+            </template>
+
+            <IncidentManageModal
+                v-if="enableEditMode"
+                ref="incidentManageModal"
+                :slug="slug"
+                :available-monitors="statusPageMonitorOptions"
+                @incident-updated="loadIncidentHistory"
+            />
         </div>
 
         <Confirm
@@ -639,6 +973,10 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import Confirm from "../components/Confirm.vue";
 import PublicGroupList from "../components/PublicGroupList.vue";
+import FluentStatusPageLayout from "../components/status-page-fluent/FluentStatusPageLayout.vue";
+import FluentPageHeader from "../components/status-page-fluent/FluentPageHeader.vue";
+import FluentHealthSummary from "../components/status-page-fluent/FluentHealthSummary.vue";
+import FluentPublicGroupList from "../components/status-page-fluent/FluentPublicGroupList.vue";
 import MaintenanceTime from "../components/MaintenanceTime.vue";
 import IncidentHistory from "../components/IncidentHistory.vue";
 import IncidentManageModal from "../components/IncidentManageModal.vue";
@@ -667,9 +1005,34 @@ const favicon = new Favico({
     animation: "none",
 });
 
+const DEFAULT_THEME_COLORS = {
+    primary: "",
+    background: "",
+    card: "",
+    success: "",
+    warning: "",
+    danger: "",
+};
+
+/** Microsoft Fluent defaults (status.cloud.microsoft) */
+const FLUENT_THEME_DEFAULTS = {
+    primary: "#0078d4",
+    background: "#faf9f8",
+    card: "#ffffff",
+    success: "#107c10",
+    warning: "#ca5010",
+    danger: "#d13438",
+};
+
+const HEX_COLOR = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/;
+
 export default {
     components: {
         PublicGroupList,
+        FluentStatusPageLayout,
+        FluentPageHeader,
+        FluentHealthSummary,
+        FluentPublicGroupList,
         ImageCropUpload,
         Confirm,
         PrismEditor,
@@ -890,6 +1253,23 @@ export default {
             return this.incidentHistory.filter((i) => i.active && i.pin);
         },
 
+        pageWideActiveIncidents() {
+            return this.activeIncidents.filter((i) => !i.monitorIds || i.monitorIds.length === 0);
+        },
+
+        statusPageMonitorOptions() {
+            const monitors = [];
+            for (const group of this.$root.publicGroupList || []) {
+                for (const monitor of group.monitorList || []) {
+                    monitors.push({
+                        id: monitor.id,
+                        name: monitor.name,
+                    });
+                }
+            }
+            return monitors;
+        },
+
         /**
          * Count of past incidents (non-active or unpinned)
          * @returns {number} Number of past incidents
@@ -915,6 +1295,83 @@ export default {
             }
             return groups;
         },
+
+        themeColorFields() {
+            const d = FLUENT_THEME_DEFAULTS;
+            return [
+                { key: "primary", label: this.$t("statusPageColorPrimary"), placeholder: d.primary },
+                { key: "background", label: this.$t("statusPageColorBackground"), placeholder: d.background },
+                { key: "card", label: this.$t("statusPageColorCard"), placeholder: d.card },
+                { key: "success", label: this.$t("statusPageColorSuccess"), placeholder: d.success },
+                { key: "warning", label: this.$t("statusPageColorWarning"), placeholder: d.warning },
+                { key: "danger", label: this.$t("statusPageColorDanger"), placeholder: d.danger },
+            ];
+        },
+
+        isFluentPageStyle() {
+            return this.config.pageStyle === "fluent";
+        },
+
+        fluentPageCssVars() {
+            if (!this.isFluentPageStyle) {
+                return {};
+            }
+
+            const vars = {};
+            const colors = { ...FLUENT_THEME_DEFAULTS, ...(this.config.themeColors || {}) };
+            const map = {
+                primary: "--sp-primary",
+                background: "--sp-bg",
+                card: "--sp-card",
+                success: "--sp-success",
+                warning: "--sp-warning",
+                danger: "--sp-danger",
+            };
+
+            for (const [key, cssVar] of Object.entries(map)) {
+                const value = colors[key] || FLUENT_THEME_DEFAULTS[key];
+                if (value) {
+                    vars[cssVar] = value;
+                }
+            }
+
+            return vars;
+        },
+
+        fluentHealthHeadline() {
+            if (Object.keys(this.$root.publicMonitorList).length === 0 && this.loadedData) {
+                return this.$t("No Services");
+            }
+            if (this.allUp) {
+                return this.$t("statusPageFluentAllOperational");
+            }
+            if (this.partialDown) {
+                return this.$t("Partially Degraded Service");
+            }
+            if (this.allDown) {
+                return this.$t("Degraded Service");
+            }
+            if (this.isMaintenance) {
+                return this.$t("maintenanceStatus-under-maintenance");
+            }
+            return this.$t("statusPageFluentStatusUnknown");
+        },
+
+        fluentHealthBannerClass() {
+            if (this.allUp) {
+                return "fluent-health-operational";
+            }
+            if (this.partialDown) {
+                return "fluent-health-degraded";
+            }
+            if (this.allDown) {
+                return "fluent-health-down";
+            }
+            if (this.isMaintenance) {
+                return "fluent-health-maintenance";
+            }
+            return "fluent-health-unknown";
+        },
     },
     watch: {
         /**
@@ -926,7 +1383,7 @@ export default {
             if (loggedIn) {
                 this.$root.getSocket().emit("getStatusPage", this.slug, (res) => {
                     if (res.ok) {
-                        this.config = res.config;
+                        this.config = this.normalizeConfig(res.config);
 
                         if (!this.config.customCSS) {
                             this.config.customCSS = "body {\n" + "  \n" + "}\n";
@@ -960,6 +1417,14 @@ export default {
         "config.theme"() {
             this.$root.statusPageTheme = this.config.theme;
             this.loadedTheme = true;
+        },
+
+        isFluentPageStyle() {
+            this.syncFluentBodyClass();
+        },
+
+        loadedTheme() {
+            this.syncFluentBodyClass();
         },
 
         "config.title"(title) {
@@ -998,6 +1463,10 @@ export default {
         // Special handle for dev
         this.baseURL = getResBaseURL();
     },
+    beforeUnmount() {
+        document.body.classList.remove("status-page-fluent");
+    },
+
     async mounted() {
         this.slug = this.overrideSlug || this.$route.params.slug;
 
@@ -1007,7 +1476,7 @@ export default {
 
         this.getData()
             .then((res) => {
-                this.config = res.data.config;
+                this.config = this.normalizeConfig(res.data.config);
 
                 if (!this.config.domainNameList) {
                     this.config.domainNameList = [];
@@ -1310,6 +1779,7 @@ export default {
                 title: "",
                 content: "",
                 style: "primary",
+                monitorIds: [],
             };
         },
 
@@ -1341,7 +1811,10 @@ export default {
          */
         editIncident(incident) {
             this.previousIncident = this.incident;
-            this.incident = { ...incident };
+            this.incident = {
+                ...incident,
+                monitorIds: [...(incident.monitorIds || [])],
+            };
             this.enableEditIncidentMode = true;
         },
 
@@ -1509,6 +1982,85 @@ export default {
                 }
             });
         },
+
+        /**
+         * Ensure config has theme color defaults
+         * @param {object} config Status page config
+         * @returns {object} Normalized config
+         */
+        syncFluentBodyClass() {
+            const active = this.loadedTheme && this.isFluentPageStyle;
+            document.body.classList.toggle("status-page-fluent", active);
+
+            const fluentVars = [
+                "--sp-primary",
+                "--sp-bg",
+                "--sp-card",
+                "--sp-card-border",
+                "--sp-success",
+                "--sp-warning",
+                "--sp-danger",
+            ];
+
+            for (const name of fluentVars) {
+                document.body.style.removeProperty(name);
+            }
+
+            if (active) {
+                for (const [name, value] of Object.entries(this.fluentPageCssVars)) {
+                    document.body.style.setProperty(name, value);
+                }
+            }
+        },
+
+        normalizeConfig(config) {
+            return {
+                ...config,
+                pageStyle: config.pageStyle === "fluent" ? "fluent" : "classic",
+                themeColors: {
+                    ...DEFAULT_THEME_COLORS,
+                    ...(config.themeColors || {}),
+                },
+            };
+        },
+
+        /**
+         * @param {string} key Color key
+         * @returns {string} Value for native color input
+         */
+        colorPickerValue(key) {
+            const value = this.config.themeColors[key];
+            if (value && HEX_COLOR.test(value)) {
+                return value;
+            }
+            const field = this.themeColorFields.find((item) => item.key === key);
+            return field?.placeholder || "#5cdd8b";
+        },
+
+        /**
+         * @param {string} key Color key
+         * @param {string} value New color value
+         * @returns {void}
+         */
+        setThemeColor(key, value) {
+            if (!this.config.themeColors) {
+                this.config.themeColors = { ...DEFAULT_THEME_COLORS };
+            }
+
+            const trimmed = (value || "").trim();
+
+            if (trimmed === "" || HEX_COLOR.test(trimmed)) {
+                this.config.themeColors[key] = trimmed;
+            }
+        },
+
+        /**
+         * @param {string} key Color key
+         * @returns {void}
+         */
+        clearThemeColor(key) {
+            this.config.themeColors[key] = "";
+        },
     },
 };
 </script>
@@ -1516,10 +2068,43 @@ export default {
 <style lang="scss" scoped>
 @import "../assets/vars.scss";
 
-.overall-status {
-    font-weight: bold;
-    font-size: 25px;
+.color-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
 
+.color-control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.color-control-label {
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color, #6c757d);
+    margin: 0;
+}
+
+.color-control-inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.form-control-color {
+    width: 2.4rem;
+    height: 2rem;
+    padding: 0.15rem;
+    flex-shrink: 0;
+}
+
+.color-hex-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    min-width: 0;
+}
+
+.overall-status {
     .ok {
         color: $primary;
     }
@@ -1534,8 +2119,6 @@ export default {
 }
 
 h1 {
-    font-size: 30px;
-
     img {
         vertical-align: middle;
         height: 60px;

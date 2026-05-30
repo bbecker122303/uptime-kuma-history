@@ -29,6 +29,8 @@
             {{ $t("markdownSupported") }}
         </div>
 
+        <IncidentMonitorPicker v-model="monitorIds" :options="availableMonitors" />
+
         <div class="mt-3">
             <button class="btn btn-light me-2" data-testid="post-incident-button" @click="$emit('post')">
                 <font-awesome-icon icon="bullhorn" />
@@ -88,15 +90,37 @@
 </template>
 
 <script>
+import IncidentMonitorPicker from "./IncidentMonitorPicker.vue";
+
 export default {
     name: "IncidentEditForm",
+    components: {
+        IncidentMonitorPicker,
+    },
     props: {
         modelValue: {
             type: Object,
             required: true,
         },
+        availableMonitors: {
+            type: Array,
+            default: () => [],
+        },
     },
     emits: ["update:modelValue", "post", "cancel"],
+    computed: {
+        monitorIds: {
+            get() {
+                return this.modelValue.monitorIds || [];
+            },
+            set(monitorIds) {
+                this.$emit("update:modelValue", {
+                    ...this.modelValue,
+                    monitorIds,
+                });
+            },
+        },
+    },
     methods: {
         updateField(field, value) {
             this.$emit("update:modelValue", {
