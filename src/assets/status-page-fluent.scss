@@ -1,9 +1,15 @@
 // Microsoft service health style tokens (used under body.status-page-fluent)
+html:has(body.status-page-fluent) {
+    background-color: var(--sp-bg);
+}
+
 body.status-page-fluent {
     --sp-primary: #0078d4;
     --sp-bg: #faf9f8;
     --sp-card: #ffffff;
     --sp-card-border: #edebe9;
+    --sp-surface-raised: #faf9f8;
+    --sp-hover: #f3f2f1;
     --sp-success: #107c10;
     --sp-warning: #ca5010;
     --sp-danger: #d13438;
@@ -19,15 +25,29 @@ body.status-page-fluent {
     background-color: var(--sp-bg) !important;
     color: var(--sp-text);
     font-family: "Segoe UI Variable", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+    .main {
+        background-color: var(--sp-bg);
+        min-height: 100vh;
+        color: var(--sp-text);
+    }
 }
 
 body.dark.status-page-fluent {
     --sp-bg: #1b1a19;
     --sp-card: #292827;
     --sp-card-border: #3b3a39;
+    --sp-surface-raised: #252423;
+    --sp-hover: #323130;
+    --sp-primary: #4da3ff;
+    --sp-success: #6ccb5f;
+    --sp-warning: #eaa066;
+    --sp-danger: #f1707b;
     --sp-text: #f3f2f1;
     --sp-text-secondary: #c8c6c4;
+    --sp-beat-maintenance-color: #4da3ff;
     --beat-empty-color: #3b3a39;
+    --beat-maintenance-color: #4da3ff;
 }
 
 .fluent-shell {
@@ -150,11 +170,7 @@ body.dark.status-page-fluent {
     transition: background-color 0.12s ease;
 
     &:hover {
-        background: #f3f2f1;
-    }
-
-    body.dark.status-page-fluent &:hover {
-        background: #323130;
+        background: var(--sp-hover);
     }
 
     .fluent-expand-icon {
@@ -305,11 +321,7 @@ body.dark.status-page-fluent {
 .fluent-service-expanded {
     padding: 0.75rem 1rem 1rem;
     border-top: 1px solid var(--sp-card-border);
-    background: #faf9f8;
-
-    body.dark.status-page-fluent & {
-        background: #252423;
-    }
+    background: var(--sp-surface-raised);
 }
 
 .fluent-performance-stats {
@@ -416,13 +428,9 @@ body.dark.status-page-fluent {
     box-shadow: none;
 
     &:hover:not(:disabled) {
-        background: #f3f2f1;
+        background: var(--sp-hover);
         border-color: var(--sp-card-border);
         color: var(--sp-text);
-    }
-
-    body.dark.status-page-fluent &:hover:not(:disabled) {
-        background: #323130;
     }
 }
 
@@ -440,13 +448,7 @@ body.dark.status-page-fluent {
         }
 
         &:hover {
-            background: #f3f2f1;
-        }
-
-        body.dark.status-page-fluent & {
-            &:hover {
-                background: #323130;
-            }
+            background: var(--sp-hover);
         }
 
         &.resolved {
@@ -507,19 +509,212 @@ body.dark.status-page-fluent {
         background: transparent;
 
         &:hover {
-            background: #f3f2f1;
+            background: var(--sp-hover);
             text-decoration: none;
-        }
-
-        body.dark.status-page-fluent & {
-            &:hover {
-                background: #323130;
-            }
         }
     }
 
     .text-muted {
         color: var(--sp-text-secondary) !important;
+    }
+}
+
+// Dark mode: neutralize Bootstrap alert backgrounds and fix contrast under Fluent layout
+body.dark.status-page-fluent .fluent-shell {
+    color: var(--sp-text);
+
+    .description,
+    .custom-footer-text,
+    .refresh-info,
+    footer,
+    footer p {
+        color: var(--sp-text-secondary);
+    }
+
+    .description a,
+    footer a {
+        color: var(--sp-primary);
+    }
+
+    .description :deep(p),
+    .description :deep(li) {
+        color: var(--sp-text-secondary);
+    }
+
+    .description :deep(h1),
+    .description :deep(h2),
+    .description :deep(h3),
+    .description :deep(strong) {
+        color: var(--sp-text);
+    }
+
+    .description :deep(code),
+    .description :deep(pre) {
+        background: #323130;
+        color: var(--sp-text);
+        border-color: var(--sp-card-border);
+    }
+
+    // Active / draft incidents and maintenance (Bootstrap bg-* on cards)
+    .fluent-incident-card,
+    .fluent-maintenance-card,
+    .shadow-box.incident {
+        background: var(--sp-card) !important;
+        color: var(--sp-text) !important;
+        border: 1px solid var(--sp-card-border) !important;
+        border-radius: var(--sp-radius);
+        box-shadow: none !important;
+
+        .alert-heading,
+        .content {
+            color: var(--sp-text);
+        }
+
+        .date,
+        .form-text {
+            color: var(--sp-text-secondary);
+        }
+    }
+
+    .fluent-incident-card.bg-warning,
+    .shadow-box.incident.bg-warning {
+        border-left: 4px solid var(--sp-warning) !important;
+    }
+
+    .fluent-incident-card.bg-danger,
+    .shadow-box.incident.bg-danger {
+        border-left: 4px solid var(--sp-danger) !important;
+    }
+
+    .fluent-incident-card.bg-info,
+    .shadow-box.incident.bg-info {
+        border-left: 4px solid var(--sp-primary) !important;
+    }
+
+    .fluent-incident-card.bg-primary,
+    .shadow-box.incident.bg-primary {
+        border-left: 4px solid var(--sp-primary) !important;
+    }
+
+    .fluent-incident-card.bg-light,
+    .shadow-box.incident.bg-light {
+        border-left: 4px solid var(--sp-card-border) !important;
+    }
+
+    .fluent-incident-card.bg-dark,
+    .shadow-box.incident.bg-dark {
+        border-left: 4px solid var(--sp-text-secondary) !important;
+    }
+
+    .fluent-maintenance-card.bg-maintenance {
+        border-left: 4px solid var(--sp-beat-maintenance-color, var(--sp-primary)) !important;
+
+        .alert-heading,
+        .content {
+            color: var(--sp-text) !important;
+        }
+    }
+
+    .btn-light {
+        color: var(--sp-text);
+        background: #3b3a39;
+        border: 1px solid var(--sp-card-border);
+
+        &:hover,
+        &:focus {
+            color: var(--sp-text);
+            background: #484644;
+            border-color: var(--sp-card-border);
+        }
+    }
+
+    .btn-secondary {
+        color: var(--sp-text);
+        background: #3b3a39;
+        border-color: var(--sp-card-border);
+
+        &:hover,
+        &:focus {
+            color: var(--sp-text);
+            background: #484644;
+            border-color: var(--sp-card-border);
+        }
+    }
+
+    .dropdown-menu {
+        background: var(--sp-card);
+        border-color: var(--sp-card-border);
+
+        .dropdown-item {
+            color: var(--sp-text);
+
+            &:hover,
+            &:focus {
+                background: var(--sp-hover);
+                color: var(--sp-text);
+            }
+        }
+    }
+
+    .form-label,
+    label {
+        color: var(--sp-text);
+    }
+
+    // Vue Multiselect (edit mode add monitor / incident monitors)
+    .multiselect__tags {
+        background: var(--sp-card);
+        border-color: var(--sp-card-border);
+        color: var(--sp-text);
+    }
+
+    .multiselect__input,
+    .multiselect__single,
+    .multiselect__placeholder {
+        background: transparent;
+        color: var(--sp-text);
+    }
+
+    .multiselect__content-wrapper {
+        background: var(--sp-card);
+        border-color: var(--sp-card-border);
+    }
+
+    .multiselect__option {
+        color: var(--sp-text);
+
+        &--highlight {
+            background: var(--sp-hover);
+            color: var(--sp-text);
+        }
+
+        &--selected {
+            background: rgba(77, 163, 255, 0.25);
+            color: var(--sp-text);
+        }
+    }
+
+    .multiselect__tag {
+        background: rgba(77, 163, 255, 0.35);
+        color: var(--sp-text);
+
+        &-icon {
+            &:hover {
+                background: rgba(77, 163, 255, 0.5);
+            }
+
+            &::after {
+                color: var(--sp-text);
+            }
+        }
+    }
+
+    .logo-wrapper .icon-upload,
+    .logo-wrapper .reset-top-left {
+        background: var(--sp-card);
+        color: var(--sp-text);
+        border: 1px solid var(--sp-card-border);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     }
 }
 
@@ -534,5 +729,13 @@ body.status-page-fluent .btn-primary {
         background-color: #106ebe;
         border-color: #106ebe;
         box-shadow: none;
+    }
+}
+
+body.dark.status-page-fluent .btn-primary {
+    &:hover,
+    &:focus {
+        background-color: #6cb8ff;
+        border-color: #6cb8ff;
     }
 }

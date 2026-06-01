@@ -37,10 +37,11 @@ export default {
     border-radius: 999px;
     vertical-align: middle;
 
+    body.dark.status-page-fluent &,
     body.dark & {
         color: #f3d6c3;
-        background: rgba(202, 80, 16, 0.18);
-        border-color: rgba(202, 80, 16, 0.35);
+        background: rgba(234, 160, 102, 0.15);
+        border-color: rgba(234, 160, 102, 0.35);
     }
 }
 

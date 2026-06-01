@@ -997,6 +997,15 @@ const FLUENT_THEME_DEFAULTS = {
     danger: "#d13438",
 };
 
+const FLUENT_THEME_DARK_DEFAULTS = {
+    primary: "#4da3ff",
+    background: "#1b1a19",
+    card: "#292827",
+    success: "#6ccb5f",
+    warning: "#eaa066",
+    danger: "#f1707b",
+};
+
 const HEX_COLOR = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/;
 
 export default {
@@ -1270,8 +1279,12 @@ export default {
             return groups;
         },
 
+        fluentThemeDefaults() {
+            return this.$root.theme === "dark" ? FLUENT_THEME_DARK_DEFAULTS : FLUENT_THEME_DEFAULTS;
+        },
+
         themeColorFields() {
-            const d = FLUENT_THEME_DEFAULTS;
+            const d = this.fluentThemeDefaults;
             return [
                 { key: "primary", label: this.$t("statusPageColorPrimary"), placeholder: d.primary },
                 { key: "background", label: this.$t("statusPageColorBackground"), placeholder: d.background },
@@ -1292,7 +1305,8 @@ export default {
             }
 
             const vars = {};
-            const colors = { ...FLUENT_THEME_DEFAULTS, ...(this.config.themeColors || {}) };
+            const userColors = this.config.themeColors || {};
+            const defaults = this.fluentThemeDefaults;
             const map = {
                 primary: "--sp-primary",
                 background: "--sp-bg",
@@ -1303,7 +1317,8 @@ export default {
             };
 
             for (const [key, cssVar] of Object.entries(map)) {
-                const value = colors[key] || FLUENT_THEME_DEFAULTS[key];
+                const user = (userColors[key] || "").trim();
+                const value = user && HEX_COLOR.test(user) ? user : defaults[key];
                 if (value) {
                     vars[cssVar] = value;
                 }
@@ -1399,6 +1414,17 @@ export default {
 
         loadedTheme() {
             this.syncFluentBodyClass();
+        },
+
+        "$root.theme"() {
+            this.syncFluentBodyClass();
+        },
+
+        "config.themeColors": {
+            deep: true,
+            handler() {
+                this.syncFluentBodyClass();
+            },
         },
 
         "config.title"(title) {
